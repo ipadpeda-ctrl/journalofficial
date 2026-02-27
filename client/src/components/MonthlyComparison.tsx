@@ -188,6 +188,8 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
                       borderRadius: "6px",
                       boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                     }}
+                    itemStyle={{ color: "hsl(var(--foreground))" }}
+                    labelStyle={{ color: "hsl(var(--foreground))" }}
                     cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
                     formatter={(value: number) => [`${value >= 0 ? "+" : ""}${value.toFixed(2)} EUR`, "P&L"]}
                   />
@@ -235,6 +237,8 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
                       borderRadius: "6px",
                       boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
                     }}
+                    itemStyle={{ color: "hsl(var(--foreground))" }}
+                    labelStyle={{ color: "hsl(var(--foreground))" }}
                     formatter={(value: number) => [`${value.toFixed(2)} EUR`, "Equity"]}
                   />
                   <Line
@@ -289,6 +293,8 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
                     borderRadius: "6px",
                     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                   }}
+                  itemStyle={{ color: "hsl(var(--foreground))" }}
+                  labelStyle={{ color: "hsl(var(--foreground))" }}
                   cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
                   formatter={(value: number, name: string) => {
                     if (name === "winRate") return [`${value.toFixed(1)}%`, "Win Rate"];

@@ -61,6 +61,8 @@ export function TradeDistributionChart({ data }: { data: TradeDistributionData }
               borderRadius: "8px",
               boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             }}
+            itemStyle={{ color: "hsl(var(--foreground))" }}
+            labelStyle={{ color: "hsl(var(--foreground))" }}
             cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
           />
           <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={40} />
@@ -106,6 +108,8 @@ export function DirectionChart({ data }: { data: DirectionData }) {
               borderRadius: "8px",
               boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             }}
+            itemStyle={{ color: "hsl(var(--foreground))" }}
+            labelStyle={{ color: "hsl(var(--foreground))" }}
           />
           <Legend />
         </PieChart>
@@ -152,6 +156,8 @@ export function WinRateChart({ data }: { data: WinRateData }) {
                 borderRadius: "8px",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               }}
+              itemStyle={{ color: "hsl(var(--foreground))" }}
+              labelStyle={{ color: "hsl(var(--foreground))" }}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -247,6 +253,8 @@ export function EquityCurveChart({ data }: { data: EquityPoint[] }) {
                 borderRadius: "8px",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
               }}
+              itemStyle={{ color: "hsl(var(--foreground))" }}
+              labelStyle={{ color: "hsl(var(--foreground))" }}
               formatter={(value: number) => [`${value.toFixed(2)}`, "Equity"]}
             />
             <Area
@@ -293,6 +301,8 @@ export function EmotionalFrequencyChart({ data }: { data: EmotionData[] }) {
               borderRadius: "8px",
               boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             }}
+            itemStyle={{ color: "hsl(var(--foreground))" }}
+            labelStyle={{ color: "hsl(var(--foreground))" }}
             cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
           />
           <Bar dataKey="count" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} maxBarSize={60} />
