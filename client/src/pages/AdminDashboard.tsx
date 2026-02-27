@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Users, TrendingUp, BarChart3, ArrowUp, ArrowDown, Shield, ShieldCheck, User as UserIcon, Trophy, Medal, Award, CheckCircle2, XCircle, Clock, AlertTriangle, Filter } from "lucide-react";
+import { Loader2, Users, TrendingUp, BarChart3, ArrowUp, ArrowDown, Shield, ShieldCheck, User as UserIcon, Trophy, Medal, Award, CheckCircle2, XCircle, Clock, AlertTriangle, Filter, KeyRound } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from "recharts";
+import { useToast } from "@/hooks/use-toast";
 import type { User, Trade } from "@shared/schema";
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -42,17 +43,18 @@ export default function AdminDashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const [location, setLocation] = useLocation();
   const [filterUserId, setFilterUserId] = useState<string>("all");
+  const { toast } = useToast();
 
   const handleTabChange = (tab: Tab) => {
     switch (tab) {
-      case "admin": break; 
+      case "admin": break;
       case "operations": setLocation("/operations"); break;
       case "calendario": setLocation("/calendar"); break;
       case "statistiche": setLocation("/stats"); break;
       case "diary": setLocation("/diary"); break;
       case "goals": setLocation("/goals"); break;
       case "settings": setLocation("/settings"); break;
-      default: setLocation("/"); break; 
+      default: setLocation("/"); break;
     }
   };
 
@@ -78,6 +80,23 @@ export default function AdminDashboard() {
   const updateApprovalMutation = useMutation({
     mutationFn: async ({ userId, isApproved }: { userId: string; isApproved: string }) => apiRequest("PATCH", `/api/admin/users/${userId}/approval`, { isApproved }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] }),
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (userId: string) => apiRequest("POST", `/api/admin/users/${userId}/reset-password`),
+    onSuccess: (data: any) => {
+      toast({
+        title: "Password Resettata",
+        description: data.message || "La password è stata resettata con successo.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile resettare la password",
+        variant: "destructive",
+      });
+    }
   });
 
   const isLoading = authLoading || (isAdmin && (usersLoading || tradesLoading));
@@ -209,7 +228,7 @@ export default function AdminDashboard() {
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
             <p className="text-muted-foreground">Panoramica di tutti gli utenti e le operazioni (Ruolo: {user?.role})</p>
           </div>
-          
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Users className="w-4 h-4" />Utenti Totali</CardTitle></CardHeader><CardContent><div className="text-3xl font-bold">{totalStats.totalUsers}</div></CardContent></Card>
             <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><BarChart3 className="w-4 h-4" />Operazioni Totali</CardTitle></CardHeader><CardContent><div className="text-3xl font-bold">{totalStats.totalTrades}</div></CardContent></Card>
@@ -257,6 +276,19 @@ export default function AdminDashboard() {
                                   {isSuperAdmin && (
                                     <Select value={u.role} onValueChange={(val) => updateRoleMutation.mutate({ userId: u.id, role: val })} disabled={updateRoleMutation.isPending}><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="user">User</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent></Select>
                                   )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      if (confirm(`Sei sicuro di voler resettare la password di ${u.firstName} a "password123"?`)) {
+                                        resetPasswordMutation.mutate(u.id);
+                                      }
+                                    }}
+                                    disabled={resetPasswordMutation.isPending}
+                                    title="Resetta Password"
+                                  >
+                                    <KeyRound className="w-4 h-4 text-muted-foreground" />
+                                  </Button>
                                 </div>
                               )}
                             </TableCell>
@@ -268,7 +300,7 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="trades">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">

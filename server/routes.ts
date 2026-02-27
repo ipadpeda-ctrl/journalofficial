@@ -484,5 +484,31 @@ export async function registerRoutes(
     }
   });
 
+  // Reset user password (admin only)
+  app.post("/api/admin/users/:id/reset-password", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const targetUser = await storage.getUser(id);
+      if (!targetUser) {
+        return res.status(404).json({ message: "Utente non trovato" });
+      }
+
+      // Prevent normal admins from resetting super_admin passwords
+      if (targetUser.role === "super_admin" && req.user!.role !== "super_admin") {
+        return res.status(403).json({ message: "Solo un super admin può resettare la password di un altro super admin" });
+      }
+
+      const defaultPassword = "password123";
+      const passwordHash = await hashPassword(defaultPassword);
+      await storage.updateUserPassword(id, passwordHash);
+
+      res.json({ message: `Password resettata con successo a: ${defaultPassword}` });
+    } catch (error) {
+      console.error("Error resetting user password:", error);
+      res.status(500).json({ message: "Errore nel reset della password" });
+    }
+  });
+
   return httpServer;
 }
