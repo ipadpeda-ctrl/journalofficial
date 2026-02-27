@@ -1,8 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "./TradesTable";
-import { TrendingDown, Flame, Calendar, Clock, Info, Activity } from "lucide-react";
+import { TrendingDown, TrendingUp, Flame, Calendar, Clock, Info, Activity } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
+
+function calculateRecoveryFactor(trades: Trade[], maxDrawdown: number): string {
+  if (trades.length === 0) return "0.00";
+  const netProfit = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+
+  if (netProfit <= 0) return "0.00";
+  if (maxDrawdown === 0) return "∞";
+
+  return (netProfit / maxDrawdown).toFixed(2);
+}
 
 interface AdvancedMetricsProps {
   trades: Trade[];
@@ -156,6 +166,7 @@ export default function AdvancedMetrics({ trades, initialCapital }: AdvancedMetr
   const performanceByDay = calculatePerformanceByDay(trades);
   const performanceByHour = calculatePerformanceByHour(trades);
   const sharpeRatio = calculateSharpeRatio(trades);
+  const recoveryFactor = calculateRecoveryFactor(trades, maxDrawdown);
 
   return (
     <div className="space-y-6">
@@ -206,23 +217,31 @@ export default function AdvancedMetrics({ trades, initialCapital }: AdvancedMetr
           </CardContent>
         </Card>
 
-        <Card className={streaks.currentStreakType === "win" ? "bg-emerald-900/20 border-emerald-900/30" : streaks.currentStreakType === "loss" ? "bg-red-900/20 border-red-900/30" : ""}>
+        <Card className="bg-indigo-900/20 border-indigo-900/30">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-2">
-              <Flame className={`w-5 h-5 ${streaks.currentStreakType === "win" ? "text-emerald-400" : streaks.currentStreakType === "loss" ? "text-red-400" : "text-muted-foreground"}`} />
-              <span className="text-sm text-muted-foreground">Streak Attuale</span>
+              <TrendingUp className="w-5 h-5 text-indigo-400" />
+              <span className="text-sm text-muted-foreground">Recovery Factor</span>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs text-xs">Profitto Netto totale diviso per Max Drawdown. Misura la capacità del sistema di riprendersi dai crolli. <br /> {'>'} 2 è eccellente.</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
-            <p className={`text-2xl font-bold font-mono ${streaks.currentStreakType === "win" ? "text-emerald-400" : streaks.currentStreakType === "loss" ? "text-red-400" : "text-muted-foreground"}`} data-testid="text-current-streak">
-              {streaks.currentStreak}
+            <p className="text-2xl font-bold text-indigo-400 font-mono" data-testid="text-recovery-factor">
+              {recoveryFactor}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {streaks.currentStreakType === "win" ? "Vincenti" : streaks.currentStreakType === "loss" ? "Perdenti" : "N/A"}
+              Capacità di recupero del conto
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-emerald-900/20 border-emerald-900/30">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-2">
