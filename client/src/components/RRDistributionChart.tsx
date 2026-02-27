@@ -123,6 +123,8 @@ export default function RRDistributionChart({ trades }: RRDistributionChartProps
                                 borderRadius: "6px",
                                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                             }}
+                            itemStyle={{ color: "hsl(var(--foreground))" }}
+                            labelStyle={{ color: "hsl(var(--foreground))" }}
                             formatter={(value: number) => [value, "Trade"]}
                             labelFormatter={(label) => `Range R/R: ${label}`}
                             cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}

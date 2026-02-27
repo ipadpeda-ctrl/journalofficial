@@ -64,6 +64,8 @@ export function PerformanceByPair({ trades }: PerformanceByPairProps) {
                 borderRadius: "8px",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               }}
+              itemStyle={{ color: "hsl(var(--foreground))" }}
+              labelStyle={{ color: "hsl(var(--foreground))" }}
               cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
               formatter={(value: number) => [`${value >= 0 ? "+" : ""}${value.toFixed(2)}`, "P&L"]}
             />
@@ -147,6 +149,8 @@ export function TradeCountDonut({ trades }: TradeCountDonutProps) {
                 borderRadius: "8px",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               }}
+              itemStyle={{ color: "hsl(var(--foreground))" }}
+              labelStyle={{ color: "hsl(var(--foreground))" }}
             />
             <Legend />
           </PieChart>
