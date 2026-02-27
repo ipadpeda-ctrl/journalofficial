@@ -14,6 +14,8 @@ const mockTrades: Trade[] = [
     emotion: "Fiducioso",
     confluencesPro: ["Trend forte", "Supporto testato"],
     confluencesContro: ["Notizie in arrivo"],
+    imageUrls: [],
+    notes: "",
   },
   {
     id: "2",
@@ -27,6 +29,8 @@ const mockTrades: Trade[] = [
     emotion: "FOMO",
     confluencesPro: ["Pattern chiaro"],
     confluencesContro: ["Contro trend", "Bassa liquidità"],
+    imageUrls: [],
+    notes: "",
   },
   {
     id: "3",
@@ -40,6 +44,8 @@ const mockTrades: Trade[] = [
     emotion: "Neutrale",
     confluencesPro: ["Volume alto", "Livello chiave"],
     confluencesContro: [],
+    imageUrls: [],
+    notes: "",
   },
   {
     id: "4",
@@ -53,6 +59,8 @@ const mockTrades: Trade[] = [
     emotion: "Sicuro",
     confluencesPro: ["Trend forte", "Pattern chiaro", "Volume alto"],
     confluencesContro: ["Orario sfavorevole"],
+    imageUrls: [],
+    notes: "",
   },
 ];
 

@@ -84,7 +84,9 @@ export const trades = pgTable("trades", {
   imageUrls: text("image_urls").array(),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_trades_userId_date").on(table.userId, table.date)
+]);
 
 export const insertTradeSchema = createInsertSchema(trades).omit({
   id: true,

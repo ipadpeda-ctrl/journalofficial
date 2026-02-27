@@ -79,7 +79,7 @@ export async function setupAuth(app: Express) {
       profileImageUrl: null,
       role: "super_admin",
     });
-    
+
     app.use((req: any, _res, next) => {
       req.user = {
         claims: { sub: DEFAULT_USER_ID },
@@ -88,7 +88,7 @@ export async function setupAuth(app: Express) {
       req.isAuthenticated = () => true;
       next();
     });
-    
+
     app.get("/api/login", (_req, res) => res.redirect("/"));
     app.get("/api/callback", (_req, res) => res.redirect("/"));
     app.get("/api/logout", (_req, res) => res.redirect("/"));
@@ -101,7 +101,7 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = {};
+    const user = { id: "" } as Express.User;
     updateUserSession(user, tokens);
     await upsertUser(tokens.claims());
     verified(null, user);

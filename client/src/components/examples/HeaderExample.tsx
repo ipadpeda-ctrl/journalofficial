@@ -3,7 +3,7 @@ import Header, { Tab } from "../Header";
 import { ThemeProvider } from "../ThemeProvider";
 
 export default function HeaderExample() {
-  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [activeTab, setActiveTab] = useState<any>("dashboard");
 
   return (
     <ThemeProvider>

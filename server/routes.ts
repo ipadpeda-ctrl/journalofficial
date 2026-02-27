@@ -7,6 +7,15 @@ import { storage } from "./storage";
 import { setupLocalAuth, isAuthenticated, isAdmin, isSuperAdmin, hashPassword } from "./localAuth";
 import { insertTradeSchema, insertDiarySchema, insertGoalSchema, registerUserSchema, loginUserSchema } from "@shared/schema";
 import { sendPasswordResetEmail } from "./email";
+import rateLimit from "express-rate-limit";
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 requests per `window` (here, per 15 minutes)
+  message: { message: "Troppi tentativi di accesso da questo IP, riprova più tardi." },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -18,7 +27,7 @@ export async function registerRoutes(
   // ============== AUTH ROUTES ==============
 
   // Register new user
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/register", authLimiter, async (req, res) => {
     try {
       const data = registerUserSchema.parse(req.body);
 
@@ -78,7 +87,7 @@ export async function registerRoutes(
   });
 
   // Login
-  app.post("/api/auth/login", (req, res, next) => {
+  app.post("/api/auth/login", authLimiter, (req, res, next) => {
     try {
       loginUserSchema.parse(req.body);
     } catch (error: any) {
@@ -115,7 +124,7 @@ export async function registerRoutes(
   // Removed emergency-reset endpoint for security reasons
 
   // Request password reset
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  app.post("/api/auth/forgot-password", authLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       if (!email) {
@@ -180,7 +189,7 @@ export async function registerRoutes(
   });
 
   // Change password (logged in user)
-  app.post("/api/auth/change-password", isAuthenticated, async (req: any, res) => {
+  app.post("/api/auth/change-password", isAuthenticated, async (req, res) => {
     try {
       const { currentPassword, newPassword } = req.body;
       if (!currentPassword || !newPassword) {
@@ -191,7 +200,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "La nuova password deve avere almeno 6 caratteri" });
       }
 
-      const user = await storage.getUser(req.user.id);
+      const user = await storage.getUser(req.user!.id);
       if (!user || !user.passwordHash) {
         return res.status(400).json({ message: "Utente non trovato" });
       }
@@ -218,7 +227,7 @@ export async function registerRoutes(
     }
 
     // Get full user data from database
-    storage.getUser(req.user.id).then(user => {
+    storage.getUser(req.user!.id).then(user => {
       if (!user) {
         return res.status(404).json({ message: "Utente non trovato" });
       }
@@ -232,9 +241,9 @@ export async function registerRoutes(
   });
 
   // Update user's initial capital
-  app.patch("/api/auth/user/capital", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/auth/user/capital", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { initialCapital } = req.body;
 
       if (typeof initialCapital !== "number" || initialCapital < 0) {
@@ -257,9 +266,9 @@ export async function registerRoutes(
   // ============== TRADE ROUTES ==============
 
   // Get current user's trades
-  app.get("/api/trades", isAuthenticated, async (req: any, res) => {
+  app.get("/api/trades", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const trades = await storage.getTradesByUser(userId);
       res.json(trades);
     } catch (error) {
@@ -269,9 +278,9 @@ export async function registerRoutes(
   });
 
   // Create a new trade
-  app.post("/api/trades", isAuthenticated, async (req: any, res) => {
+  app.post("/api/trades", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const tradeData = insertTradeSchema.parse({ ...req.body, userId });
       const trade = await storage.createTrade(tradeData);
       res.status(201).json(trade);
@@ -282,9 +291,9 @@ export async function registerRoutes(
   });
 
   // Update a trade
-  app.patch("/api/trades/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/trades/:id", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const id = parseInt(req.params.id);
       const trade = await storage.updateTrade(id, userId, req.body);
       if (!trade) {
@@ -298,9 +307,9 @@ export async function registerRoutes(
   });
 
   // Delete a trade
-  app.delete("/api/trades/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/trades/:id", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteTrade(id, userId);
       if (!deleted) {
@@ -315,9 +324,9 @@ export async function registerRoutes(
 
   // ============== DIARY ROUTES ==============
 
-  app.get("/api/diary", isAuthenticated, async (req: any, res) => {
+  app.get("/api/diary", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const diary = await storage.getDiaryByUser(userId);
       res.json(diary);
     } catch (error) {
@@ -326,9 +335,9 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/diary", isAuthenticated, async (req: any, res) => {
+  app.post("/api/diary", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const diaryData = insertDiarySchema.parse({ ...req.body, userId });
       const diary = await storage.upsertDiary(diaryData);
       res.status(201).json(diary);
@@ -338,9 +347,9 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/diary/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/diary/:id", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteDiary(id, userId);
       if (!deleted) {
@@ -355,9 +364,9 @@ export async function registerRoutes(
 
   // ============== GOAL ROUTES ==============
 
-  app.get("/api/goals", isAuthenticated, async (req: any, res) => {
+  app.get("/api/goals", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const goals = await storage.getGoalsByUser(userId);
       res.json(goals);
     } catch (error) {
@@ -366,9 +375,9 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/goals", isAuthenticated, async (req: any, res) => {
+  app.post("/api/goals", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const goalData = insertGoalSchema.parse({ ...req.body, userId });
       const goal = await storage.upsertGoal(goalData);
       res.status(201).json(goal);
@@ -378,9 +387,9 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/goals/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/goals/:id", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteGoal(id, userId);
       if (!deleted) {
@@ -420,7 +429,7 @@ export async function registerRoutes(
   });
 
   // Update user role (super_admin only)
-  app.patch("/api/admin/users/:id/role", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+  app.patch("/api/admin/users/:id/role", isAuthenticated, isSuperAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const { role } = req.body;
@@ -448,7 +457,7 @@ export async function registerRoutes(
   });
 
   // Update user approval status (admin only)
-  app.patch("/api/admin/users/:id/approval", isAuthenticated, isAdmin, async (req: any, res) => {
+  app.patch("/api/admin/users/:id/approval", isAuthenticated, isAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const { isApproved } = req.body;
