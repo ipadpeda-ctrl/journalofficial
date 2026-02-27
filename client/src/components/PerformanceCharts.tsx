@@ -11,6 +11,7 @@ import {
   Pie,
   Cell,
   Legend,
+  CartesianGrid,
 } from "recharts";
 
 interface PerformanceByPairProps {
@@ -42,9 +43,20 @@ export function PerformanceByPair({ trades }: PerformanceByPairProps) {
       <h3 className="text-sm font-medium mb-4">Performance per Pair</h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData}>
-            <XAxis dataKey="pair" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+          <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="colorPairPos" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.9} />
+                <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
+              </linearGradient>
+              <linearGradient id="colorPairNeg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.9} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.15} />
+            <XAxis dataKey="pair" stroke="hsl(var(--muted-foreground))" fontSize={11} dy={10} axisLine={false} tickLine={false} />
+            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} dx={-10} axisLine={false} tickLine={false} />
             <Tooltip
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
@@ -52,17 +64,18 @@ export function PerformanceByPair({ trades }: PerformanceByPairProps) {
                 borderRadius: "8px",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               }}
-              cursor={{ fill: "hsl(var(--muted))" }}
+              cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
               formatter={(value: number) => [`${value >= 0 ? "+" : ""}${value.toFixed(2)}`, "P&L"]}
             />
             <Bar
               dataKey="pnl"
               radius={[4, 4, 0, 0]}
+              maxBarSize={60}
             >
               {chartData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={entry.pnl >= 0 ? "hsl(142, 71%, 45%)" : "hsl(0, 84%, 60%)"}
+                  fill={entry.pnl >= 0 ? "url(#colorPairPos)" : "url(#colorPairNeg)"}
                 />
               ))}
             </Bar>

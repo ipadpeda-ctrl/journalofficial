@@ -50,10 +50,10 @@ export function TradeDistributionChart({ data }: { data: TradeDistributionData }
   return (
     <ChartCard title="Distribuzione Trade">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} layout="vertical">
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-          <YAxis type="category" dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} width={80} />
+        <BarChart data={chartData} layout="vertical" margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--muted-foreground))" opacity={0.15} />
+          <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} dy={10} axisLine={false} tickLine={false} />
+          <YAxis type="category" dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} width={80} dx={-10} axisLine={false} tickLine={false} />
           <Tooltip
             contentStyle={{
               backgroundColor: "hsl(var(--card))",
@@ -61,8 +61,9 @@ export function TradeDistributionChart({ data }: { data: TradeDistributionData }
               borderRadius: "8px",
               boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             }}
+            cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
           />
-          <Bar dataKey="value" radius={[0, 4, 4, 0]} />
+          <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={40} />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>
@@ -220,16 +221,22 @@ export function EquityCurveChart({ data }: { data: EquityPoint[] }) {
                 <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.15} vertical={false} />
             <XAxis
               dataKey="date"
               stroke="hsl(var(--muted-foreground))"
               fontSize={12}
+              dy={10}
+              axisLine={false}
+              tickLine={false}
               allowDataOverflow
             />
             <YAxis
               stroke="hsl(var(--muted-foreground))"
               fontSize={12}
+              dx={-10}
+              axisLine={false}
+              tickLine={false}
               domain={['auto', 'auto']}
               allowDataOverflow
             />
@@ -275,10 +282,10 @@ export function EmotionalFrequencyChart({ data }: { data: EmotionData[] }) {
   return (
     <ChartCard title="Frequenza Emotiva" className="lg:col-span-2">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis dataKey="emotion" stroke="hsl(var(--muted-foreground))" fontSize={11} angle={-45} textAnchor="end" height={60} />
-          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+        <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.15} />
+          <XAxis dataKey="emotion" stroke="hsl(var(--muted-foreground))" fontSize={11} angle={-45} textAnchor="end" height={60} dy={10} axisLine={false} tickLine={false} />
+          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} dx={-10} axisLine={false} tickLine={false} />
           <Tooltip
             contentStyle={{
               backgroundColor: "hsl(var(--card))",
@@ -286,9 +293,9 @@ export function EmotionalFrequencyChart({ data }: { data: EmotionData[] }) {
               borderRadius: "8px",
               boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             }}
-            cursor={{ fill: "hsl(var(--muted))" }}
+            cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
           />
-          <Bar dataKey="count" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="count" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} maxBarSize={60} />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>

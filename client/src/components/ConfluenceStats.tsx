@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Trade, TradeResult } from "./TradesTable";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell, CartesianGrid } from "recharts";
 
 interface ConfluenceStatsProps {
   trades: Trade[];
@@ -17,9 +17,9 @@ const RESULT_COLORS: Record<TradeResult, string> = {
 
 export default function ConfluenceStats({ trades, type }: ConfluenceStatsProps) {
   const confluenceKey = type === "pro" ? "confluencesPro" : "confluencesContro";
-  
+
   const confluenceData: Record<string, Record<TradeResult, number>> = {};
-  
+
   for (const trade of trades) {
     for (const confluence of trade[confluenceKey]) {
       if (!confluenceData[confluence]) {
@@ -45,7 +45,7 @@ export default function ConfluenceStats({ trades, type }: ConfluenceStatsProps) 
       parziale: results.parziale,
       non_fillato: results.non_fillato,
       total: Object.values(results).reduce((a, b) => a + b, 0),
-      winRate: ((results.target + results.parziale) / 
+      winRate: ((results.target + results.parziale) /
         Math.max(1, Object.values(results).reduce((a, b) => a + b, 0)) * 100).toFixed(1),
     }))
     .sort((a, b) => b.total - a.total);
@@ -65,23 +65,29 @@ export default function ConfluenceStats({ trades, type }: ConfluenceStatsProps) 
             <BarChart
               data={chartData}
               layout="vertical"
-              margin={{ left: 20, right: 20 }}
+              margin={{ left: 20, right: 20, top: 0, bottom: 0 }}
             >
-              <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis 
-                type="category" 
-                dataKey="name" 
-                stroke="hsl(var(--muted-foreground))" 
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--muted-foreground))" opacity={0.15} />
+              <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} dy={10} axisLine={false} tickLine={false} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                stroke="hsl(var(--muted-foreground))"
                 fontSize={11}
                 width={120}
                 tick={{ fill: "hsl(var(--foreground))" }}
+                dx={-10}
+                axisLine={false}
+                tickLine={false}
               />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "hsl(var(--card))",
                   border: "1px solid hsl(var(--border))",
                   borderRadius: "6px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                 }}
+                cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
                 formatter={(value: number, name: string) => {
                   const labels: Record<string, string> = {
                     target: "Take Profit",
@@ -93,7 +99,8 @@ export default function ConfluenceStats({ trades, type }: ConfluenceStatsProps) 
                   return [value, labels[name] || name];
                 }}
               />
-              <Legend 
+              <Legend
+                wrapperStyle={{ paddingTop: "20px" }}
                 formatter={(value) => {
                   const labels: Record<string, string> = {
                     target: "Take Profit",
@@ -105,11 +112,11 @@ export default function ConfluenceStats({ trades, type }: ConfluenceStatsProps) 
                   return labels[value] || value;
                 }}
               />
-              <Bar dataKey="target" stackId="a" fill={RESULT_COLORS.target} />
-              <Bar dataKey="stop_loss" stackId="a" fill={RESULT_COLORS.stop_loss} />
-              <Bar dataKey="breakeven" stackId="a" fill={RESULT_COLORS.breakeven} />
-              <Bar dataKey="parziale" stackId="a" fill={RESULT_COLORS.parziale} />
-              <Bar dataKey="non_fillato" stackId="a" fill={RESULT_COLORS.non_fillato} />
+              <Bar dataKey="target" stackId="a" fill={RESULT_COLORS.target} maxBarSize={40} />
+              <Bar dataKey="stop_loss" stackId="a" fill={RESULT_COLORS.stop_loss} maxBarSize={40} />
+              <Bar dataKey="breakeven" stackId="a" fill={RESULT_COLORS.breakeven} maxBarSize={40} />
+              <Bar dataKey="parziale" stackId="a" fill={RESULT_COLORS.parziale} maxBarSize={40} />
+              <Bar dataKey="non_fillato" stackId="a" fill={RESULT_COLORS.non_fillato} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </div>
