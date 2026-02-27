@@ -125,7 +125,7 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -162,9 +162,8 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
                   <TableCell className="font-medium">{trade.pair || "-"}</TableCell>
                   <TableCell>
                     <span
-                      className={`inline-flex items-center gap-1 ${
-                        trade.direction === "long" ? "text-emerald-500" : "text-red-500"
-                      }`}
+                      className={`inline-flex items-center gap-1 ${trade.direction === "long" ? "text-emerald-500" : "text-red-500"
+                        }`}
                     >
                       {trade.direction === "long" ? (
                         <ArrowUp className="w-4 h-4" />
@@ -188,11 +187,11 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={(e) => { e.stopPropagation(); onEdit?.(trade); }}
+                        onClick={() => onEdit?.(trade)}
                         data-testid={`button-edit-trade-${trade.id}`}
                       >
                         <Pencil className="w-4 h-4" />
@@ -200,7 +199,7 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={(e) => { e.stopPropagation(); onDelete?.(trade.id); }}
+                        onClick={() => onDelete?.(trade.id)}
                         data-testid={`button-delete-trade-${trade.id}`}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -212,6 +211,74 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile view */}
+      <div className="flex flex-col gap-4 md:hidden mt-4">
+        {filteredTrades.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8 border rounded-lg">
+            Nessuna operazione trovata
+          </div>
+        ) : (
+          filteredTrades.map((trade) => (
+            <Card
+              key={trade.id}
+              className="p-4 flex flex-col gap-3 cursor-pointer hover-elevate transition-shadow"
+              onClick={() => onRowClick?.(trade)}
+            >
+              <div className="flex justify-between items-center border-b pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-lg">{trade.pair || "-"}</span>
+                  <span
+                    className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${trade.direction === "long" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+                      }`}
+                  >
+                    {trade.direction === "long" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                    {trade.direction === "long" ? "Long" : "Short"}
+                  </span>
+                </div>
+                {getResultBadge(trade.result)}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground block text-xs">Data e Ora</span>
+                  <span className="font-mono">{trade.date} {trade.time}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-muted-foreground block text-xs">Rischio/Rendimento</span>
+                  <span className="font-mono text-blue-400 font-medium">{trade.rr ? trade.rr.toFixed(2) : "-"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-xs">Target</span>
+                  <span className="font-mono text-emerald-500">{trade.target.toFixed(2)}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-muted-foreground block text-xs">Stop Loss</span>
+                  <span className="font-mono text-red-500">{trade.stopLoss.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t mt-1">
+                <div className="flex gap-2 text-xs">
+                  <span className="bg-muted px-2 py-1 rounded-md">{trade.emotion || "Neutrale"}</span>
+                  <span className="bg-muted px-2 py-1 rounded-md flex gap-1">
+                    <span className="text-emerald-500">+{trade.confluencesPro.length}</span>
+                    <span className="text-red-500">-{trade.confluencesContro.length}</span>
+                  </span>
+                </div>
+                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                  <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => onEdit?.(trade)}>
+                    <Pencil className="w-3 h-3" />
+                  </Button>
+                  <Button size="icon" variant="outline" className="h-8 w-8 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => onDelete?.(trade.id)}>
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
       </div>
     </Card>
   );

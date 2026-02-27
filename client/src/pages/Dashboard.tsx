@@ -23,6 +23,7 @@ import { Loader2, Download, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Trade as SchemaTrade } from "@shared/schema";
 
 const defaultPairs = ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD", "XAUUSD", "GBPJPY", "EURJPY"];
@@ -170,9 +171,19 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-background">
         <Header activeTab={activeTab} onTabChange={handleTabChange} />
-        <main className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center mb-4">
+              <Skeleton className="h-8 w-[200px]" />
+              <Skeleton className="h-10 w-[120px]" />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Skeleton className="h-[120px] rounded-xl" />
+              <Skeleton className="h-[120px] rounded-xl" />
+              <Skeleton className="h-[120px] rounded-xl" />
+              <Skeleton className="h-[120px] rounded-xl" />
+            </div>
+            <Skeleton className="h-[400px] w-full rounded-xl mt-4" />
           </div>
         </main>
       </div>

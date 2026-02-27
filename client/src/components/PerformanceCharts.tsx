@@ -49,9 +49,11 @@ export function PerformanceByPair({ trades }: PerformanceByPairProps) {
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
-                borderRadius: "6px",
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               }}
-              formatter={(value: number) => [`${value >= 0 ? "+" : ""}${value.toFixed(2)}%`, "P&L"]}
+              cursor={{ fill: "hsl(var(--muted))" }}
+              formatter={(value: number) => [`${value >= 0 ? "+" : ""}${value.toFixed(2)}`, "P&L"]}
             />
             <Bar
               dataKey="pnl"
@@ -129,7 +131,8 @@ export function TradeCountDonut({ trades }: TradeCountDonutProps) {
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
-                borderRadius: "6px",
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               }}
             />
             <Legend />

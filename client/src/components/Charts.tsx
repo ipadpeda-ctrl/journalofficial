@@ -12,8 +12,8 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   Legend,
   Brush,
 } from "recharts";
@@ -58,7 +58,8 @@ export function TradeDistributionChart({ data }: { data: TradeDistributionData }
             contentStyle={{
               backgroundColor: "hsl(var(--card))",
               border: "1px solid hsl(var(--border))",
-              borderRadius: "6px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             }}
           />
           <Bar dataKey="value" radius={[0, 4, 4, 0]} />
@@ -101,7 +102,8 @@ export function DirectionChart({ data }: { data: DirectionData }) {
             contentStyle={{
               backgroundColor: "hsl(var(--card))",
               border: "1px solid hsl(var(--border))",
-              borderRadius: "6px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             }}
           />
           <Legend />
@@ -146,7 +148,8 @@ export function WinRateChart({ data }: { data: WinRateData }) {
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
-                borderRadius: "6px",
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               }}
             />
           </PieChart>
@@ -167,10 +170,10 @@ interface EquityPoint {
 export function EquityCurveChart({ data }: { data: EquityPoint[] }) {
   const [brushRange, setBrushRange] = useState<{ start: number; end: number } | null>(null);
 
-  const isZoomed = brushRange !== null && 
+  const isZoomed = brushRange !== null &&
     (brushRange.start > 0 || brushRange.end < data.length - 1);
 
-  const displayData = brushRange 
+  const displayData = brushRange
     ? data.slice(brushRange.start, brushRange.end + 1)
     : data;
 
@@ -188,7 +191,7 @@ export function EquityCurveChart({ data }: { data: EquityPoint[] }) {
     <Card className="p-4 lg:col-span-2">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
         <h3 className="text-sm font-medium">Equity Curve</h3>
-        
+
         <div className="flex flex-wrap items-center gap-2">
           {isZoomed && (
             <Button
@@ -203,24 +206,30 @@ export function EquityCurveChart({ data }: { data: EquityPoint[] }) {
           )}
         </div>
       </div>
-      
+
       <p className="text-xs text-muted-foreground mb-2">
         Usa la barra di scorrimento in basso per zoomare
       </p>
-      
+
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis 
-              dataKey="date" 
-              stroke="hsl(var(--muted-foreground))" 
+          <AreaChart data={data}>
+            <defs>
+              <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+            <XAxis
+              dataKey="date"
+              stroke="hsl(var(--muted-foreground))"
               fontSize={12}
               allowDataOverflow
             />
-            <YAxis 
-              stroke="hsl(var(--muted-foreground))" 
-              fontSize={12} 
+            <YAxis
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
               domain={['auto', 'auto']}
               allowDataOverflow
             />
@@ -228,17 +237,18 @@ export function EquityCurveChart({ data }: { data: EquityPoint[] }) {
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
-                borderRadius: "6px",
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
               }}
-              formatter={(value: number) => [`${value.toFixed(2)} EUR`, "Equity"]}
+              formatter={(value: number) => [`${value.toFixed(2)}`, "Equity"]}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="equity"
               stroke="hsl(var(--chart-1))"
+              fillOpacity={1}
+              fill="url(#colorEquity)"
               strokeWidth={2}
-              dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 0, r: 3 }}
-              activeDot={{ r: 5, fill: "hsl(var(--chart-1))" }}
             />
             <Brush
               dataKey="date"
@@ -249,7 +259,7 @@ export function EquityCurveChart({ data }: { data: EquityPoint[] }) {
               endIndex={brushRange?.end}
               onChange={handleBrushChange}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </Card>
@@ -273,8 +283,10 @@ export function EmotionalFrequencyChart({ data }: { data: EmotionData[] }) {
             contentStyle={{
               backgroundColor: "hsl(var(--card))",
               border: "1px solid hsl(var(--border))",
-              borderRadius: "6px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             }}
+            cursor={{ fill: "hsl(var(--muted))" }}
           />
           <Bar dataKey="count" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
         </BarChart>

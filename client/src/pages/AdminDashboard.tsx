@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Users, TrendingUp, BarChart3, ArrowUp, ArrowDown, Shield, ShieldCheck, User as UserIcon, Trophy, Medal, Award, CheckCircle2, XCircle, Clock, AlertTriangle, Filter, KeyRound } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { User, Trade } from "@shared/schema";
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -105,11 +106,18 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-background">
         <Header activeTab="admin" onTabChange={handleTabChange} />
-        <main className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            <p className="text-muted-foreground">Caricamento dashboard admin...</p>
+        <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+          <div className="mb-6 flex flex-col gap-2">
+            <Skeleton className="h-8 w-[250px]" />
+            <Skeleton className="h-4 w-[350px]" />
           </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <Skeleton className="h-[120px] rounded-xl" />
+            <Skeleton className="h-[120px] rounded-xl" />
+            <Skeleton className="h-[120px] rounded-xl" />
+            <Skeleton className="h-[120px] rounded-xl" />
+          </div>
+          <Skeleton className="h-[400px] w-full rounded-xl" />
         </main>
       </div>
     );

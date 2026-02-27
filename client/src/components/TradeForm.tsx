@@ -326,7 +326,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 type="button"
                 variant={direction === "long" ? "default" : "outline"}
                 size="sm"
-                className={`flex-1 ${direction === "long" ? "bg-emerald-600" : ""}`}
+                className={`flex-1 transition-all duration-200 active:scale-95 ${direction === "long" ? "bg-emerald-600 hover:bg-emerald-700 shadow-md ring-2 ring-emerald-500/20" : ""}`}
                 onClick={() => setValue("direction", "long")}
                 data-testid="button-direction-long"
               >
@@ -336,7 +336,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 type="button"
                 variant={direction === "short" ? "default" : "outline"}
                 size="sm"
-                className={`flex-1 ${direction === "short" ? "bg-red-600" : ""}`}
+                className={`flex-1 transition-all duration-200 active:scale-95 ${direction === "short" ? "bg-red-600 hover:bg-red-700 shadow-md ring-2 ring-red-500/20" : ""}`}
                 onClick={() => setValue("direction", "short")}
                 data-testid="button-direction-short"
               >
@@ -398,26 +398,32 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
           {/* Row B: Automated Outputs (Target, RR) - VISUALLY SEPARATED */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="target" className="text-emerald-600 font-medium">Target (Auto)</Label>
+              <Label htmlFor="target" className="text-emerald-600 font-medium transition-colors">Target (Auto)</Label>
               <Input
                 id="target"
                 type="number"
                 step="0.01"
                 placeholder="Auto"
                 {...form.register("target")}
-                className="font-mono bg-muted/50 border-emerald-500/30"
+                className={`font-mono transition-all duration-500 ease-out bg-muted/50 ${Number(form.watch("target")) > 0
+                    ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                    : "border-emerald-500/30"
+                  }`}
                 data-testid="input-target"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="rr" className="text-emerald-600 font-medium">RR Matematico</Label>
+              <Label htmlFor="rr" className="text-blue-500 font-medium transition-colors">RR Matematico</Label>
               <Input
                 id="rr"
                 type="number"
                 readOnly
                 {...form.register("rr")}
-                className="font-mono bg-muted/50 border-emerald-500/30 text-muted-foreground"
+                className={`font-mono transition-all duration-500 ease-out bg-muted/50 text-muted-foreground ${Number(form.watch("rr")) >= 2
+                    ? "border-blue-500 bg-blue-500/10 text-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                    : "border-blue-500/30"
+                  }`}
                 data-testid="input-rr"
               />
             </div>
@@ -435,13 +441,13 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                   type="button"
                   variant={resultVal === result ? "default" : "outline"}
                   size="sm"
-                  className={`flex-1 ${resultVal === result
+                  className={`flex-1 transition-all duration-200 active:scale-95 ${resultVal === result
                     ? result === "target"
-                      ? "bg-emerald-600"
+                      ? "bg-emerald-600 hover:bg-emerald-700 shadow-md text-white"
                       : result === "stop_loss"
-                        ? "bg-red-600"
-                        : "bg-yellow-600"
-                    : ""
+                        ? "bg-red-600 hover:bg-red-700 shadow-md text-white"
+                        : "bg-yellow-600 hover:bg-yellow-700 shadow-md text-white"
+                    : "hover:bg-muted"
                     }`}
                   onClick={() => setValue("result", result)}
                   data-testid={`button-result-${result}`}

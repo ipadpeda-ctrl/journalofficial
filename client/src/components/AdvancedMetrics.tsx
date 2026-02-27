@@ -1,14 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "./TradesTable";
-import { TrendingDown, Flame, Calendar, Clock, Info } from "lucide-react";
+import { TrendingDown, Flame, Calendar, Clock, Info, Activity } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 
 interface AdvancedMetricsProps {
   trades: Trade[];
+  initialCapital: number;
 }
 
-function calculateMaxDrawdown(trades: Trade[]): { maxDrawdown: number; maxDrawdownPercent: string } {
+function calculateMaxDrawdown(trades: Trade[], initialCapital: number): { maxDrawdown: number; maxDrawdownPercent: string } {
   if (trades.length === 0) return { maxDrawdown: 0, maxDrawdownPercent: "0.00" };
 
   const sortedTrades = [...trades].sort((a, b) => {
@@ -17,9 +18,10 @@ function calculateMaxDrawdown(trades: Trade[]): { maxDrawdown: number; maxDrawdo
     return dateA.getTime() - dateB.getTime();
   });
 
-  let equity = 0;
-  let peak = 0;
+  let equity = initialCapital;
+  let peak = initialCapital;
   let maxDrawdown = 0;
+  let maxDrawdownPercentValue = 0;
 
   for (const trade of sortedTrades) {
     equity += trade.pnl || 0;
@@ -29,22 +31,43 @@ function calculateMaxDrawdown(trades: Trade[]): { maxDrawdown: number; maxDrawdo
     }
 
     const drawdown = peak - equity;
+    const drawdownPercent = peak > 0 ? (drawdown / peak) * 100 : 0;
+
     if (drawdown > maxDrawdown) {
       maxDrawdown = drawdown;
     }
+    if (drawdownPercent > maxDrawdownPercentValue) {
+      maxDrawdownPercentValue = drawdownPercent;
+    }
   }
 
-  const totalPnl = sortedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-  const maxPeak = Math.max(peak, Math.abs(totalPnl));
-  const maxDrawdownPercent = maxPeak > 0 ? ((maxDrawdown / maxPeak) * 100).toFixed(2) : "0.00";
-  return { maxDrawdown, maxDrawdownPercent };
+  return {
+    maxDrawdown,
+    maxDrawdownPercent: maxDrawdownPercentValue.toFixed(2)
+  };
 }
 
-function calculateStreaks(trades: Trade[]): { 
-  currentStreak: number; 
+function calculateSharpeRatio(trades: Trade[]): string {
+  if (trades.length < 2) return "0.00";
+
+  const returns = trades.map(t => t.pnl || 0);
+  const avgReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
+
+  const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / (returns.length - 1);
+  const stdDev = Math.sqrt(variance);
+
+  if (stdDev === 0) return avgReturn > 0 ? "∞" : "0.00";
+
+  // Simplified Sharpe Ratio calculation per trade (Risk Free Rate = 0)
+  const sharpe = avgReturn / stdDev;
+  return sharpe.toFixed(2);
+}
+
+function calculateStreaks(trades: Trade[]): {
+  currentStreak: number;
   currentStreakType: "win" | "loss" | "none";
-  maxWinStreak: number; 
-  maxLossStreak: number 
+  maxWinStreak: number;
+  maxLossStreak: number
 } {
   if (trades.length === 0) {
     return { currentStreak: 0, currentStreakType: "none", maxWinStreak: 0, maxLossStreak: 0 };
@@ -93,23 +116,23 @@ function calculateStreaks(trades: Trade[]): {
 
 function calculatePerformanceByDay(trades: Trade[]): { day: string; winRate: number; count: number }[] {
   const days = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
-  
+
   return days.map((day, index) => {
     const dayTrades = trades.filter((t) => {
       const date = new Date(t.date);
       return date.getDay() === index;
     });
-    
+
     const wins = dayTrades.filter((t) => t.result === "target" || t.result === "parziale").length;
     const winRate = dayTrades.length > 0 ? (wins / dayTrades.length) * 100 : 0;
-    
+
     return { day, winRate, count: dayTrades.length };
   });
 }
 
 function calculatePerformanceByHour(trades: Trade[]): { hour: string; winRate: number; count: number }[] {
   const hours: { hour: string; winRate: number; count: number }[] = [];
-  
+
   for (let h = 6; h <= 22; h++) {
     const hourStr = h.toString().padStart(2, "0");
     const hourTrades = trades.filter((t) => {
@@ -117,25 +140,26 @@ function calculatePerformanceByHour(trades: Trade[]): { hour: string; winRate: n
       const tradeHour = parseInt(t.time.split(":")[0], 10);
       return tradeHour === h;
     });
-    
+
     const wins = hourTrades.filter((t) => t.result === "target" || t.result === "parziale").length;
     const winRate = hourTrades.length > 0 ? (wins / hourTrades.length) * 100 : 0;
-    
+
     hours.push({ hour: `${hourStr}:00`, winRate, count: hourTrades.length });
   }
-  
+
   return hours;
 }
 
-export default function AdvancedMetrics({ trades }: AdvancedMetricsProps) {
-  const { maxDrawdown, maxDrawdownPercent } = calculateMaxDrawdown(trades);
+export default function AdvancedMetrics({ trades, initialCapital }: AdvancedMetricsProps) {
+  const { maxDrawdown, maxDrawdownPercent } = calculateMaxDrawdown(trades, initialCapital);
   const streaks = calculateStreaks(trades);
   const performanceByDay = calculatePerformanceByDay(trades);
   const performanceByHour = calculatePerformanceByHour(trades);
+  const sharpeRatio = calculateSharpeRatio(trades);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="bg-red-900/20 border-red-900/30">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-2">
@@ -146,7 +170,7 @@ export default function AdvancedMetrics({ trades }: AdvancedMetricsProps) {
                   <Info className="w-3 h-3 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="max-w-48 text-xs">La massima perdita dal picco massimo dell'equity</p>
+                  <p className="max-w-48 text-xs">La massima perdita percentuale dal picco di equity</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -155,6 +179,29 @@ export default function AdvancedMetrics({ trades }: AdvancedMetricsProps) {
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               {maxDrawdown.toFixed(2)} EUR
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-blue-900/20 border-blue-900/30">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="w-5 h-5 text-blue-400" />
+              <span className="text-sm text-muted-foreground">Sharpe Ratio</span>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-48 text-xs">Rendimento medio diviso per la volatilità. {'>'}1 è buono, {'>'}2 è ottimo.</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <p className="text-2xl font-bold text-blue-400 font-mono" data-testid="text-sharpe-ratio">
+              {sharpeRatio}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Rendimento / Rischio
             </p>
           </CardContent>
         </Card>
@@ -217,13 +264,13 @@ export default function AdvancedMetrics({ trades }: AdvancedMetricsProps) {
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={performanceByDay} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis 
-                    dataKey="day" 
+                  <XAxis
+                    dataKey="day"
                     tick={{ fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
                   />
-                  <YAxis 
+                  <YAxis
                     tick={{ fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
@@ -232,8 +279,8 @@ export default function AdvancedMetrics({ trades }: AdvancedMetricsProps) {
                   />
                   <Bar dataKey="winRate" radius={[4, 4, 0, 0]}>
                     {performanceByDay.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
+                      <Cell
+                        key={`cell-${index}`}
                         fill={entry.winRate >= 50 ? "hsl(142, 71%, 45%)" : entry.count > 0 ? "hsl(0, 84%, 60%)" : "hsl(var(--muted))"}
                       />
                     ))}
@@ -262,14 +309,14 @@ export default function AdvancedMetrics({ trades }: AdvancedMetricsProps) {
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={performanceByHour} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis 
-                    dataKey="hour" 
+                  <XAxis
+                    dataKey="hour"
                     tick={{ fontSize: 9 }}
                     axisLine={false}
                     tickLine={false}
                     interval={1}
                   />
-                  <YAxis 
+                  <YAxis
                     tick={{ fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
@@ -278,8 +325,8 @@ export default function AdvancedMetrics({ trades }: AdvancedMetricsProps) {
                   />
                   <Bar dataKey="winRate" radius={[4, 4, 0, 0]}>
                     {performanceByHour.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
+                      <Cell
+                        key={`cell-${index}`}
                         fill={entry.winRate >= 50 ? "hsl(142, 71%, 45%)" : entry.count > 0 ? "hsl(0, 84%, 60%)" : "hsl(var(--muted))"}
                       />
                     ))}

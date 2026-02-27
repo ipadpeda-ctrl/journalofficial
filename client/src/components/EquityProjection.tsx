@@ -20,17 +20,24 @@ export default function EquityProjection({ trades, initialCapital = 10000 }: Equ
   const lossTrades = trades.filter((t) => t.result === "stop_loss");
   const totalTrades = winTrades.length + lossTrades.length;
 
-  if (totalTrades < 3) {
+  if (totalTrades < 30) {
     return (
       <Card className="p-4" data-testid="equity-projection">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-medium">Proiezione Equity (12 mesi)</h3>
         </div>
         <div className="h-64 flex items-center justify-center">
-          <p className="text-sm text-muted-foreground text-center">
-            Inserisci almeno 3 trade per vedere la proiezione.<br />
-            <span className="text-xs">Trade attuali: {totalTrades}</span>
-          </p>
+          <div className="text-center space-y-2">
+            <p className="text-sm text-yellow-500 font-medium">
+              Proiezione a bassa affidabilità statistica
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Inserisci almeno 30 trade per ottenere una proiezione attendibile basata sulla Legge dei Grandi Numeri.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Trade attuali: {totalTrades} / 30
+            </p>
+          </div>
         </div>
       </Card>
     );

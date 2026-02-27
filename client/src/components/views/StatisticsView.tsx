@@ -158,7 +158,7 @@ export default function StatisticsView({ trades, initialCapital }: StatisticsVie
             </div>
 
             <MetricsCards trades={filteredTrades} />
-            <AdvancedMetrics trades={filteredTrades} />
+            <AdvancedMetrics trades={filteredTrades} initialCapital={initialCapital} />
             <MonthlyComparison trades={filteredTrades} initialCapital={initialCapital} />
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
