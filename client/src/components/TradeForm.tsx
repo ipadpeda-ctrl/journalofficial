@@ -20,10 +20,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 interface CustomUser {
-  pairs?: string[];
-  emotions?: string[];
-  confluencesPro?: string[];
-  confluencesContro?: string[];
+  pairs?: string[] | null;
+  emotions?: string[] | null;
+  confluencesPro?: string[] | null;
+  confluencesContro?: string[] | null;
 }
 
 // Default values as fallback if user has no custom settings

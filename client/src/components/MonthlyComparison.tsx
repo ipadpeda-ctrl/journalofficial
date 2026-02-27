@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "./TradesTable";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, Legend, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, Legend, LineChart, Line, CartesianGrid } from "recharts";
 import { TrendingUp, Calendar } from "lucide-react";
 
 interface MonthlyComparisonProps {
@@ -156,31 +156,46 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorPnLPos" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.9} />
+                      <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
+                    </linearGradient>
+                    <linearGradient id="colorPnLNeg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.9} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.15} />
                   <XAxis
                     dataKey="monthLabel"
                     tick={{ fontSize: 10 }}
                     axisLine={false}
                     tickLine={false}
+                    dy={10}
                   />
                   <YAxis
                     tick={{ fontSize: 10 }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(v) => `${v >= 0 ? "+" : ""}${v}`}
+                    dx={-10}
                   />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "6px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                     }}
+                    cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
                     formatter={(value: number) => [`${value >= 0 ? "+" : ""}${value.toFixed(2)} EUR`, "P&L"]}
                   />
-                  <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="pnl" radius={[4, 4, 0, 0]} maxBarSize={60}>
                     {monthlyData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={entry.pnl >= 0 ? "hsl(142, 71%, 45%)" : "hsl(0, 84%, 60%)"}
+                        fill={entry.pnl >= 0 ? "url(#colorPnLPos)" : "url(#colorPnLNeg)"}
                       />
                     ))}
                   </Bar>
@@ -198,23 +213,27 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.15} />
                   <XAxis
                     dataKey="monthLabel"
                     tick={{ fontSize: 10 }}
                     axisLine={false}
                     tickLine={false}
+                    dy={10}
                   />
                   <YAxis
                     tick={{ fontSize: 10 }}
                     axisLine={false}
                     tickLine={false}
                     domain={["dataMin - 100", "dataMax + 100"]}
+                    dx={-10}
                   />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "6px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
                     }}
                     formatter={(value: number) => [`${value.toFixed(2)} EUR`, "Equity"]}
                   />
@@ -222,8 +241,9 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
                     type="monotone"
                     dataKey="equity"
                     stroke="hsl(217, 91%, 60%)"
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(217, 91%, 60%)", strokeWidth: 0, r: 4 }}
+                    strokeWidth={3}
+                    dot={{ fill: "hsl(217, 91%, 60%)", strokeWidth: 2, r: 4, stroke: "var(--background)" }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -240,11 +260,19 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorWinRate" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.9} />
+                    <stop offset="95%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.3} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground))" opacity={0.15} />
                 <XAxis
                   dataKey="monthLabel"
                   tick={{ fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
+                  dy={10}
                 />
                 <YAxis
                   tick={{ fontSize: 10 }}
@@ -252,19 +280,22 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
                   tickLine={false}
                   domain={[0, 100]}
                   tickFormatter={(v) => `${v}%`}
+                  dx={-10}
                 />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "6px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                   }}
+                  cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
                   formatter={(value: number, name: string) => {
                     if (name === "winRate") return [`${value.toFixed(1)}%`, "Win Rate"];
                     return [value, name];
                   }}
                 />
-                <Bar dataKey="winRate" fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="winRate" fill="url(#colorWinRate)" radius={[4, 4, 0, 0]} maxBarSize={60} />
               </BarChart>
             </ResponsiveContainer>
           </div>

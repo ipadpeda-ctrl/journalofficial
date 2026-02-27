@@ -217,7 +217,14 @@ export default function Dashboard() {
           <TradeForm onSubmit={handleSubmitTrade} onDuplicate={() => console.log("Duplicate")} editingTrade={editingTrade ? { ...editingTrade, target: editingTrade.target.toString(), stopLoss: editingTrade.stopLoss.toString(), slPips: editingTrade.slPips?.toString() || "", tpPips: editingTrade.tpPips?.toString() || "", rr: editingTrade.rr?.toString() || "" } : undefined} onCancelEdit={handleCancelEdit} />
         )}
 
-        {activeTab === "settings" && <Settings pairs={defaultPairs} emotions={defaultEmotions} confluencesPro={defaultConfluencesPro} confluencesContro={defaultConfluencesContro} initialCapital={initialCapital} onSave={(settings) => console.log("Settings saved:", settings)} />}
+        {activeTab === "settings" && <Settings
+          pairs={user?.pairs?.length ? user.pairs : defaultPairs}
+          emotions={user?.emotions?.length ? user.emotions : defaultEmotions}
+          confluencesPro={user?.confluencesPro?.length ? user.confluencesPro : defaultConfluencesPro}
+          confluencesContro={user?.confluencesContro?.length ? user.confluencesContro : defaultConfluencesContro}
+          initialCapital={initialCapital}
+          onSave={(settings) => console.log("Settings saved:", settings)}
+        />}
         {activeTab === "diary" && <TradingDiary />}
         {activeTab === "goals" && <MonthlyGoals trades={trades.map((t) => ({ date: t.date, result: t.result, target: t.target, stopLoss: t.stopLoss }))} />}
       </main>

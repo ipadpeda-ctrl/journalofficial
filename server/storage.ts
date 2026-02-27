@@ -26,6 +26,7 @@ export interface IStorage {
   updateUserRole(id: string, role: string): Promise<User | undefined>;
   updateUserApproval(id: string, isApproved: string): Promise<User | undefined>;
   updateUserCapital(id: string, initialCapital: number): Promise<User | undefined>;
+  updateUserSettings(id: string, settings: { pairs?: string[], emotions?: string[], confluencesPro?: string[], confluencesContro?: string[] }): Promise<User | undefined>;
   updateUserPassword(id: string, passwordHash: string): Promise<User | undefined>;
   setResetToken(id: string, token: string, expiry: Date): Promise<User | undefined>;
   clearResetToken(id: string): Promise<User | undefined>;
@@ -126,6 +127,15 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ initialCapital, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async updateUserSettings(id: string, settings: { pairs?: string[], emotions?: string[], confluencesPro?: string[], confluencesContro?: string[] }): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ ...settings, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     return user;
