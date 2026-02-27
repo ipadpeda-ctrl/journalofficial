@@ -14,6 +14,7 @@ import MoodTracker from "@/components/MoodTracker";
 import ConfluenceStats from "@/components/ConfluenceStats";
 import MetricsCards from "@/components/MetricsCards";
 import EquityProjection from "@/components/EquityProjection";
+import RRDistributionChart from "@/components/RRDistributionChart";
 import RiskOfRuinTable from "@/components/RiskOfRuinTable";
 import AdvancedMetrics from "@/components/AdvancedMetrics";
 import MonthlyComparison from "@/components/MonthlyComparison";
@@ -152,11 +153,6 @@ export default function StatisticsView({ trades, initialCapital }: StatisticsVie
                 </Card>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-6">
-                <TradeCountDonut trades={filteredTrades} />
-                <PerformanceByPair trades={filteredTrades} />
-            </div>
-
             <MetricsCards trades={filteredTrades} />
             <AdvancedMetrics trades={filteredTrades} initialCapital={initialCapital} />
             <MonthlyComparison trades={filteredTrades} initialCapital={initialCapital} />
@@ -168,6 +164,11 @@ export default function StatisticsView({ trades, initialCapital }: StatisticsVie
                 <ResultBreakdownCard title="Parziali" result="parziale" trades={filteredTrades} color="hsl(217, 91%, 60%)" />
             </div>
 
+            <div className="grid lg:grid-cols-2 gap-6">
+                <RRDistributionChart trades={filteredTrades} />
+                <TradeCountDonut trades={filteredTrades} />
+            </div>
+
             <MoodTracker trades={filteredTrades} />
 
             <div className="grid lg:grid-cols-2 gap-6">
@@ -176,11 +177,15 @@ export default function StatisticsView({ trades, initialCapital }: StatisticsVie
             </div>
 
             <div className="grid lg:grid-cols-2 gap-6">
-                <EquityProjection trades={filteredTrades} initialCapital={initialCapital} />
+                <PerformanceByPair trades={filteredTrades} />
                 <RiskOfRuinTable trades={filteredTrades} />
             </div>
 
+            <div className="grid lg:grid-cols-1 gap-6">
+                <EquityProjection trades={filteredTrades} initialCapital={initialCapital} />
+            </div>
+
             <EquityCurveChart data={equityData} />
-        </div>
+        </div >
     );
 }

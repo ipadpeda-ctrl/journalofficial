@@ -159,7 +159,7 @@ export default function AdvancedMetrics({ trades, initialCapital }: AdvancedMetr
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-red-900/20 border-red-900/30">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-2">
@@ -206,6 +206,23 @@ export default function AdvancedMetrics({ trades, initialCapital }: AdvancedMetr
           </CardContent>
         </Card>
 
+        <Card className={streaks.currentStreakType === "win" ? "bg-emerald-900/20 border-emerald-900/30" : streaks.currentStreakType === "loss" ? "bg-red-900/20 border-red-900/30" : ""}>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Flame className={`w-5 h-5 ${streaks.currentStreakType === "win" ? "text-emerald-400" : streaks.currentStreakType === "loss" ? "text-red-400" : "text-muted-foreground"}`} />
+              <span className="text-sm text-muted-foreground">Streak Attuale</span>
+            </div>
+            <p className={`text-2xl font-bold font-mono ${streaks.currentStreakType === "win" ? "text-emerald-400" : streaks.currentStreakType === "loss" ? "text-red-400" : "text-muted-foreground"}`} data-testid="text-current-streak">
+              {streaks.currentStreak}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {streaks.currentStreakType === "win" ? "Vincenti" : streaks.currentStreakType === "loss" ? "Perdenti" : "N/A"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <Card className="bg-emerald-900/20 border-emerald-900/30">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-2">

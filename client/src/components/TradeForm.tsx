@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, Copy } from "lucide-react";
+import { Plus, X, Copy, Upload, Image as ImageIcon } from "lucide-react";
 import ConfluenceTag from "./ConfluenceTag";
 import { useAuth } from "@/hooks/useAuth";
 import { useForm, Controller } from "react-hook-form";
@@ -359,7 +359,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 placeholder="1.00"
                 value={currentRisk}
                 onChange={(e) => handleRiskChange(e.target.value)}
-                className="font-mono bg-background"
+                className={`font-mono bg-background focus-visible:ring-1 transition-shadow ${direction === "long" ? "focus-visible:ring-emerald-500" : "focus-visible:ring-red-500"
+                  }`}
                 data-testid="input-stop-loss"
               />
             </div>
@@ -373,7 +374,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 placeholder="es. 10"
                 value={currentSlPips}
                 onChange={(e) => handleSlPipsChange(e.target.value)}
-                className="font-mono bg-background"
+                className={`font-mono bg-background focus-visible:ring-1 transition-shadow ${direction === "long" ? "focus-visible:ring-emerald-500" : "focus-visible:ring-red-500"
+                  }`}
                 data-testid="input-sl-pips"
               />
             </div>
@@ -387,7 +389,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 placeholder="es. 30"
                 value={currentTpPips}
                 onChange={(e) => handleTpPipsChange(e.target.value)}
-                className="font-mono bg-background"
+                className={`font-mono bg-background focus-visible:ring-1 transition-shadow ${direction === "long" ? "focus-visible:ring-emerald-500" : "focus-visible:ring-red-500"
+                  }`}
                 data-testid="input-tp-pips"
               />
             </div>
@@ -406,8 +409,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 placeholder="Auto"
                 {...form.register("target")}
                 className={`font-mono transition-all duration-500 ease-out bg-muted/50 ${Number(form.watch("target")) > 0
-                    ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
-                    : "border-emerald-500/30"
+                  ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                  : "border-emerald-500/30"
                   }`}
                 data-testid="input-target"
               />
@@ -421,8 +424,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 readOnly
                 {...form.register("rr")}
                 className={`font-mono transition-all duration-500 ease-out bg-muted/50 text-muted-foreground ${Number(form.watch("rr")) >= 2
-                    ? "border-blue-500 bg-blue-500/10 text-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
-                    : "border-blue-500/30"
+                  ? "border-blue-500 bg-blue-500/10 text-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                  : "border-blue-500/30"
                   }`}
                 data-testid="input-rr"
               />
@@ -483,9 +486,26 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
 
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-3">
-            <Label>Confluenze PRO</Label>
-            <div className="flex flex-wrap gap-2">
-              {confluencesPro.map((tag) => (
+            <Label className="text-emerald-500 font-medium">Confluenze PRO</Label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {availableConfluencesPro.map((tag: string) => {
+                const isSelected = confluencesPro.includes(tag);
+                return (
+                  <Badge
+                    key={tag}
+                    variant={isSelected ? "default" : "outline"}
+                    className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
+                      ? "bg-emerald-500 hover:bg-emerald-600 shadow-sm"
+                      : "hover:border-emerald-500/50 hover:bg-emerald-500/10 text-muted-foreground"
+                      }`}
+                    onClick={() => isSelected ? removeConfluence("pro", tag) : addConfluence("pro", tag)}
+                  >
+                    {tag}
+                  </Badge>
+                );
+              })}
+              {/* Render custom tags that are not in the default/available list */}
+              {confluencesPro.filter((tag) => !availableConfluencesPro.includes(tag)).map((tag) => (
                 <ConfluenceTag
                   key={tag}
                   label={tag}
@@ -494,86 +514,73 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 />
               ))}
             </div>
-            <div className="flex gap-2">
-              <Select onValueChange={(v) => addConfluence("pro", v)}>
-                <SelectTrigger className="flex-1" data-testid="select-confluence-pro">
-                  <SelectValue placeholder="Aggiungi..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableConfluencesPro
-                    .filter((c: string) => !confluencesPro.includes(c))
-                    .map((c: string) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              <div className="flex gap-1">
-                <Input
-                  placeholder="Custom..."
-                  value={newProTag}
-                  onChange={(e) => setNewProTag(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence("pro", newProTag))}
-                  className="w-28"
-                />
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="outline"
-                  onClick={() => addConfluence("pro", newProTag)}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
+            <div className="flex gap-2 items-center">
+              <Plus className="w-4 h-4 text-muted-foreground mr-1" />
+              <Input
+                placeholder="Custom..."
+                value={newProTag}
+                onChange={(e) => setNewProTag(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence("pro", newProTag))}
+                className="w-28"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => addConfluence("pro", newProTag)}
+              >
+                Aggiungi Custom
+              </Button>
             </div>
           </div>
+        </div>
 
-          <div className="space-y-3">
-            <Label>Confluenze CONTRO</Label>
-            <div className="flex flex-wrap gap-2">
-              {confluencesContro.map((tag) => (
-                <ConfluenceTag
+        <div className="space-y-3">
+          <Label className="text-red-500 font-medium">Confluenze CONTRO</Label>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {availableConfluencesContro.map((tag: string) => {
+              const isSelected = confluencesContro.includes(tag);
+              return (
+                <Badge
                   key={tag}
-                  label={tag}
-                  type="contro"
-                  onRemove={() => removeConfluence("contro", tag)}
-                />
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Select onValueChange={(v) => addConfluence("contro", v)}>
-                <SelectTrigger className="flex-1" data-testid="select-confluence-contro">
-                  <SelectValue placeholder="Aggiungi..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableConfluencesContro
-                    .filter((c: string) => !confluencesContro.includes(c))
-                    .map((c: string) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              <div className="flex gap-1">
-                <Input
-                  placeholder="Custom..."
-                  value={newControTag}
-                  onChange={(e) => setNewControTag(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence("contro", newControTag))}
-                  className="w-28"
-                />
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="outline"
-                  onClick={() => addConfluence("contro", newControTag)}
+                  variant={isSelected ? "default" : "outline"}
+                  className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
+                    ? "bg-red-500 hover:bg-red-600 shadow-sm"
+                    : "hover:border-red-500/50 hover:bg-red-500/10 text-muted-foreground"
+                    }`}
+                  onClick={() => isSelected ? removeConfluence("contro", tag) : addConfluence("contro", tag)}
                 >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+                  {tag}
+                </Badge>
+              );
+            })}
+            {/* Render custom tags that are not in the default/available list */}
+            {confluencesContro.filter((tag) => !availableConfluencesContro.includes(tag)).map((tag) => (
+              <ConfluenceTag
+                key={tag}
+                label={tag}
+                type="contro"
+                onRemove={() => removeConfluence("contro", tag)}
+              />
+            ))}
+          </div>
+          <div className="flex gap-2 items-center">
+            <Plus className="w-4 h-4 text-muted-foreground mr-1" />
+            <Input
+              placeholder="Custom..."
+              value={newControTag}
+              onChange={(e) => setNewControTag(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence("contro", newControTag))}
+              className="w-28"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => addConfluence("contro", newControTag)}
+            >
+              Aggiungi Custom
+            </Button>
           </div>
         </div>
 
@@ -590,62 +597,86 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
 
         <div className="space-y-3">
           <Label>Screenshot / Immagini</Label>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Incolla URL immagine..."
-              value={newImageUrl}
-              onChange={(e) => setNewImageUrl(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addImageUrl(newImageUrl))}
-              className="flex-1"
-            />
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
-              onClick={() => addImageUrl(newImageUrl)}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
+          <div
+            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-colors group relative"
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // Simplified drop handler: we just expect an image URL to be dropped or typed
+              const url = e.dataTransfer.getData('text');
+              if (url) addImageUrl(url);
+            }}
+          >
+            <div className="bg-muted p-3 rounded-full group-hover:bg-primary/10 transition-colors">
+              <Upload className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-muted-foreground">Trascina qui l'URL dell'immagine</p>
+              <p className="text-xs text-muted-foreground mt-1">oppure incollalo nel campo sottostante</p>
+            </div>
+            <div className="flex gap-2 w-full mt-2 max-w-sm relative z-10">
+              <Input
+                placeholder="https://..."
+                value={newImageUrl}
+                onChange={(e) => setNewImageUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addImageUrl(newImageUrl))}
+                className="flex-1 bg-background"
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                onClick={() => addImageUrl(newImageUrl)}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
+
           {imageUrls.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3 mt-4">
               {imageUrls.map((url, index) => (
                 <div
                   key={index}
-                  className="relative group w-20 h-20 rounded-md overflow-hidden border border-border"
+                  className="relative group w-32 h-20 rounded-md overflow-hidden border shadow-sm transition-transform hover:scale-105"
                 >
                   <img
                     src={url}
                     alt={`Screenshot ${index + 1}`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Crect fill='%23333' width='80' height='80'/%3E%3Ctext fill='%23888' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='10'%3EError%3C/text%3E%3C/svg%3E";
+                      (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='80' viewBox='0 0 128 80'%3E%3Crect fill='%23f1f5f9' width='128' height='80'/%3E%3Ctext fill='%2394a3b8' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='12' font-family='sans-serif'%3ENo Preview%3C/text%3E%3C/svg%3E";
                     }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => removeImageUrl(url)}
-                    className="absolute top-1 right-1 p-1 rounded-full bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="w-6 h-6 rounded-full shadow-lg"
+                      onClick={() => removeImageUrl(url)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="flex justify-end gap-2 pt-4">
+        <div className="flex justify-end gap-2 pt-4 border-t mt-4">
           {editingTrade && (
             <Button type="button" variant="outline" onClick={onCancelEdit}>
               Annulla
             </Button>
           )}
-          <Button type="submit">
+          <Button type="submit" className="min-w-32 shadow-md">
             {editingTrade ? "Salva Modifiche" : "Salva Operazione"}
           </Button>
         </div>
-      </form>
-    </Card>
+      </form >
+    </Card >
   );
 }
