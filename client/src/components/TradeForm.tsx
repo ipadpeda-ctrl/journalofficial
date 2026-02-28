@@ -522,7 +522,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
 
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-3">
-            <Label className="text-emerald-500 font-medium">Confluenze PRO</Label>
+            <Label className="text-emerald-500 font-semibold text-sm">Confluenze PRO</Label>
             <div className="flex flex-wrap gap-2 mb-2">
               {availableConfluencesPro.map((tag: string) => {
                 const isSelected = confluencesPro.includes(tag);
@@ -572,7 +572,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
         </div>
 
         <div className="space-y-3">
-          <Label className="text-red-500 font-medium">Confluenze CONTRO</Label>
+          <Label className="text-red-500 font-semibold text-sm">Confluenze CONTRO</Label>
           <div className="flex flex-wrap gap-2 mb-2">
             {availableConfluencesContro.map((tag: string) => {
               const isSelected = confluencesContro.includes(tag);
@@ -623,7 +623,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
         {/* ALIGNED TIMEFRAMES & BARRIER */}
         <div className="grid md:grid-cols-2 gap-6 bg-muted/10 p-4 rounded-lg border border-border/40">
           <div className="space-y-3">
-            <Label className="text-primary font-medium">TF. Allineati (Macro)</Label>
+            <Label className="text-primary font-semibold text-sm">TF. Allineati (Macro)</Label>
             <div className="flex flex-wrap gap-2">
               {FIXED_ALIGNED_TIMEFRAMES.map((tf) => {
                 const isSelected = alignedTimeframes.includes(tf);
@@ -642,11 +642,13 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 );
               })}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Seleziona i timeframe maggiori orientati nella direzione del tuo trade ({direction}).</p>
+            <p className="text-xs text-white/90 font-medium mt-2">
+              Seleziona i timeframe maggiori orientati nella direzione del tuo trade ({direction}).
+            </p>
           </div>
 
           <div className="space-y-3">
-            <Label className="text-primary font-medium">Barrier (Microstrutture confermate)</Label>
+            <Label className="text-blue-500 font-semibold text-sm">Barrier (Microstrutture confermate)</Label>
             <div className="flex flex-wrap gap-2">
               {availableBarrierOptions.map((b: string) => {
                 const isSelected = barrier.includes(b);
@@ -665,7 +667,9 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 );
               })}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Quali micro-strutture hanno confermato l'ingresso a mercato?</p>
+            <p className="text-xs text-white/90 font-medium mt-2">
+              Quali micro-strutture hanno confermato l'ingresso a mercato?
+            </p>
           </div>
         </div>
 
