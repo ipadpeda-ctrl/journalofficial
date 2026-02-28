@@ -531,8 +531,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                     key={tag}
                     variant={isSelected ? "default" : "outline"}
                     className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
-                      ? "bg-emerald-500 hover:bg-emerald-600 shadow-sm"
-                      : "hover:border-emerald-500/50 hover:bg-emerald-500/10 text-white"
+                      ? "bg-emerald-500 hover:bg-emerald-600 shadow-sm text-white"
+                      : "hover:border-emerald-500/50 hover:bg-emerald-500/10 text-foreground"
                       }`}
                     onClick={() => isSelected ? removeConfluence("pro", tag) : addConfluence("pro", tag)}
                   >
@@ -581,8 +581,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                   key={tag}
                   variant={isSelected ? "default" : "outline"}
                   className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
-                    ? "bg-red-500 hover:bg-red-600 shadow-sm"
-                    : "hover:border-red-500/50 hover:bg-red-500/10 text-white"
+                    ? "bg-red-500 hover:bg-red-600 shadow-sm text-white"
+                    : "hover:border-red-500/50 hover:bg-red-500/10 text-foreground"
                     }`}
                   onClick={() => isSelected ? removeConfluence("contro", tag) : addConfluence("contro", tag)}
                 >
@@ -633,7 +633,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                     variant={isSelected ? "default" : "outline"}
                     className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
                       ? "bg-cyan-600 hover:bg-cyan-700 shadow-sm text-white border-cyan-500"
-                      : "hover:bg-cyan-500/10 hover:border-cyan-500/50 text-white"
+                      : "hover:bg-cyan-500/10 hover:border-cyan-500/50 text-foreground"
                       }`}
                     onClick={() => toggleAlignedTimeframe(tf)}
                   >
@@ -642,7 +642,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 );
               })}
             </div>
-            <p className="text-xs text-white/90 font-medium mt-2">
+            <p className="text-xs text-muted-foreground font-medium mt-2">
               Seleziona i timeframe maggiori orientati nella direzione del tuo trade ({direction}).
             </p>
           </div>
@@ -658,7 +658,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                     variant={isSelected ? "default" : "outline"}
                     className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
                       ? "bg-cyan-600 hover:bg-cyan-700 shadow-sm text-white border-cyan-500"
-                      : "hover:bg-cyan-500/10 hover:border-cyan-500/50 text-white"
+                      : "hover:bg-cyan-500/10 hover:border-cyan-500/50 text-foreground"
                       }`}
                     onClick={() => toggleBarrier(b)}
                   >
@@ -667,7 +667,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                 );
               })}
             </div>
-            <p className="text-xs text-white/90 font-medium mt-2">
+            <p className="text-xs text-muted-foreground font-medium mt-2">
               Quali micro-strutture hanno confermato l'ingresso a mercato?
             </p>
           </div>

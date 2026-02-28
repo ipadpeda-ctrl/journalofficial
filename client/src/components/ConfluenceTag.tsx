@@ -12,11 +12,10 @@ export default function ConfluenceTag({ label, type, onRemove, removable = true 
   return (
     <Badge
       variant="secondary"
-      className={`gap-1 ${
-        type === "pro"
-          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-          : "bg-red-500/20 text-red-400 border-red-500/30"
-      }`}
+      className={`gap-1 ${type === "pro"
+          ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+          : "bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30"
+        }`}
       data-testid={`tag-${type}-${label.toLowerCase().replace(/\s+/g, '-')}`}
     >
       {label}
