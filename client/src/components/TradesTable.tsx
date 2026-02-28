@@ -39,6 +39,8 @@ export interface Trade {
   emotion: string;
   confluencesPro: string[];
   confluencesContro: string[];
+  alignedTimeframes: string[];
+  barrier: string[];
   imageUrls: string[];
   notes: string;
 }
@@ -52,19 +54,11 @@ interface TradesTableProps {
 
 export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: TradesTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterPair, setFilterPair] = useState<string>("all");
-  const [filterResult, setFilterResult] = useState<string>("all");
-
-  // FIX: Filtriamo le coppie vuote per evitare il crash del componente Select
-  const uniquePairs = Array.from(new Set(trades.map((t) => t.pair).filter((p) => p && p.trim() !== "")));
-
   const filteredTrades = trades.filter((trade) => {
     const matchesSearch =
       trade.pair.toLowerCase().includes(searchTerm.toLowerCase()) ||
       trade.emotion.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPair = filterPair === "all" || trade.pair === filterPair;
-    const matchesResult = filterResult === "all" || trade.result === filterResult;
-    return matchesSearch && matchesPair && matchesResult;
+    return matchesSearch;
   });
 
   const getResultBadge = (result: Trade["result"]) => {
@@ -85,43 +79,14 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
   return (
     <Card className="p-4">
       <div className="flex flex-col sm:flex-row gap-4 mb-4">
-        <div className="relative flex-1">
+        <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Cerca operazioni..."
+            placeholder="Cerca per coppia o emozione..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9"
-            data-testid="input-search-trades"
           />
-        </div>
-        <div className="flex gap-2">
-          <Select value={filterPair} onValueChange={setFilterPair}>
-            <SelectTrigger className="w-32" data-testid="select-filter-pair">
-              <SelectValue placeholder="Coppia" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutte</SelectItem>
-              {uniquePairs.map((pair) => (
-                <SelectItem key={pair} value={pair}>
-                  {pair}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterResult} onValueChange={setFilterResult}>
-            <SelectTrigger className="w-32" data-testid="select-filter-result">
-              <SelectValue placeholder="Risultato" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti</SelectItem>
-              <SelectItem value="target">Target</SelectItem>
-              <SelectItem value="stop_loss">Stop Loss</SelectItem>
-              <SelectItem value="breakeven">Breakeven</SelectItem>
-              <SelectItem value="parziale">Parziale</SelectItem>
-              <SelectItem value="non_fillato">Non Fillato</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
@@ -138,6 +103,7 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
               <TableHead className="w-16 text-right">RR</TableHead>
               <TableHead className="w-24">Risultato</TableHead>
               <TableHead className="w-24">Emozione</TableHead>
+              <TableHead className="w-20">TF/Bar.</TableHead>
               <TableHead className="min-w-40">Confluenze</TableHead>
               <TableHead className="w-24">Azioni</TableHead>
             </TableRow>
@@ -180,6 +146,12 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
                   </TableCell>
                   <TableCell>{getResultBadge(trade.result)}</TableCell>
                   <TableCell className="text-sm">{trade.emotion}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1 text-[10px] uppercase font-bold text-muted-foreground">
+                      <span>{trade.alignedTimeframes.length > 0 ? trade.alignedTimeframes.join(", ") : "-"}</span>
+                      <span className="text-blue-500">{trade.barrier.length > 0 ? trade.barrier.join(", ") : "-"}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       <span className="text-xs text-emerald-500">+{trade.confluencesPro.length}</span>
@@ -265,6 +237,9 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
                   <span className="bg-muted px-2 py-1 rounded-md flex gap-1">
                     <span className="text-emerald-500">+{trade.confluencesPro.length}</span>
                     <span className="text-red-500">-{trade.confluencesContro.length}</span>
+                  </span>
+                  <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded-md cursor-help" title={`TF: ${trade.alignedTimeframes.join(", ")} | Barrier: ${trade.barrier.join(", ")}`}>
+                    TF/B
                   </span>
                 </div>
                 <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>

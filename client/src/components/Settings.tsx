@@ -15,6 +15,7 @@ interface SettingsProps {
   emotions: string[];
   confluencesPro: string[];
   confluencesContro: string[];
+  barrierOptions?: string[];
   initialCapital?: number;
   onSave?: (settings: SettingsData) => void;
 }
@@ -24,6 +25,7 @@ export interface SettingsData {
   emotions: string[];
   confluencesPro: string[];
   confluencesContro: string[];
+  barrierOptions?: string[];
 }
 
 export default function Settings({
@@ -31,6 +33,7 @@ export default function Settings({
   emotions: initialEmotions,
   confluencesPro: initialConfluencesPro,
   confluencesContro: initialConfluencesContro,
+  barrierOptions: initialBarrierOptions = ["m15", "m10", "m5", "m1"],
   initialCapital = 10000,
   onSave,
 }: SettingsProps) {
@@ -39,6 +42,7 @@ export default function Settings({
   const [emotions, setEmotions] = useState(initialEmotions);
   const [confluencesPro, setConfluencesPro] = useState(initialConfluencesPro);
   const [confluencesContro, setConfluencesContro] = useState(initialConfluencesContro);
+  const [barrierOptions, setBarrierOptions] = useState(initialBarrierOptions);
   const [capital, setCapital] = useState(initialCapital);
 
   useEffect(() => {
@@ -51,12 +55,14 @@ export default function Settings({
     setEmotions(initialEmotions);
     setConfluencesPro(initialConfluencesPro);
     setConfluencesContro(initialConfluencesContro);
-  }, [initialPairs, initialEmotions, initialConfluencesPro, initialConfluencesContro]);
+    setBarrierOptions(initialBarrierOptions);
+  }, [initialPairs, initialEmotions, initialConfluencesPro, initialConfluencesContro, initialBarrierOptions]);
 
   const [newPair, setNewPair] = useState("");
   const [newEmotion, setNewEmotion] = useState("");
   const [newProConfluence, setNewProConfluence] = useState("");
   const [newControConfluence, setNewControConfluence] = useState("");
+  const [newBarrier, setNewBarrier] = useState("");
 
   const updateCapitalMutation = useMutation({
     mutationFn: async (newCapital: number) => {
@@ -107,7 +113,7 @@ export default function Settings({
   };
 
   const handleSave = () => {
-    const settingsData = { pairs, emotions, confluencesPro, confluencesContro };
+    const settingsData = { pairs, emotions, confluencesPro, confluencesContro, barrierOptions };
     // Salvataggio tramite API
     updateSettingsMutation.mutate(settingsData);
     // Callback opzionale per il genitore
@@ -299,9 +305,42 @@ export default function Settings({
         </Card>
       </div>
 
+      <Card className="p-6">
+        <h2 className="text-lg font-medium mb-4">Barrier (Microstrutture/Conferme)</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Aggiungi le conferme di time-frame inferiori che cerchi per convalidare il setup (es. m5, m15).
+        </p>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {barrierOptions.map((barrier) => (
+            <Badge key={barrier} variant="secondary" className="gap-1 border-primary/20 bg-primary/10 text-primary">
+              {barrier}
+              <button onClick={() => removeItem(setBarrierOptions, barrier)} className="hover:opacity-70">
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Nuovo barrier (es. m3)"
+            value={newBarrier}
+            onChange={(e) => setNewBarrier(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addItem(setBarrierOptions, newBarrier, () => setNewBarrier(""))}
+            className="max-w-xs"
+          />
+          <Button
+            variant="outline"
+            onClick={() => addItem(setBarrierOptions, newBarrier, () => setNewBarrier(""))}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Aggiungi
+          </Button>
+        </div>
+      </Card>
+
       <div className="flex justify-end">
-        <Button 
-          onClick={handleSave} 
+        <Button
+          onClick={handleSave}
           disabled={updateSettingsMutation.isPending}
           data-testid="button-save-settings"
         >

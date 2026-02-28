@@ -24,6 +24,7 @@ interface CustomUser {
   emotions?: string[] | null;
   confluencesPro?: string[] | null;
   confluencesContro?: string[] | null;
+  barrierOptions?: string[] | null;
 }
 
 // Default values as fallback if user has no custom settings
@@ -31,6 +32,8 @@ const DEFAULT_PAIRS = ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD", "XAUUSD
 const DEFAULT_EMOTIONS = ["Neutrale", "FOMO", "Rabbia", "Vendetta", "Speranza", "Fiducioso", "Impaziente", "Paura", "Sicuro", "Stress"];
 const DEFAULT_CONFLUENCES_PRO = ["Trend forte", "Supporto testato", "Volume alto", "Pattern chiaro", "Livello chiave"];
 const DEFAULT_CONFLUENCES_CONTRO = ["Notizie in arrivo", "Pattern debole", "Contro trend", "Bassa liquidità", "Orario sfavorevole"];
+const DEFAULT_BARRIER_OPTIONS = ["m15", "m10", "m5", "m1"];
+const FIXED_ALIGNED_TIMEFRAMES = ["Mensile", "Settimanale", "Daily", "H4", "H1", "M30"];
 
 interface TradeFormProps {
   onSubmit?: (trade: TradeFormData) => void;
@@ -55,6 +58,8 @@ export interface TradeFormData {
   emotion: string;
   confluencesPro: string[];
   confluencesContro: string[];
+  alignedTimeframes: string[];
+  barrier: string[];
   imageUrls: string[];
   notes: string;
 }
@@ -73,6 +78,8 @@ export const tradeFormSchema = z.object({
   emotion: z.string().optional(),
   confluencesPro: z.array(z.string()),
   confluencesContro: z.array(z.string()),
+  alignedTimeframes: z.array(z.string()),
+  barrier: z.array(z.string()),
   imageUrls: z.array(z.string()),
   notes: z.string().optional(),
 });
@@ -87,6 +94,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
   const emotions = customUser?.emotions?.length ? customUser.emotions : DEFAULT_EMOTIONS;
   const availableConfluencesPro = customUser?.confluencesPro?.length ? customUser.confluencesPro : DEFAULT_CONFLUENCES_PRO;
   const availableConfluencesContro = customUser?.confluencesContro?.length ? customUser.confluencesContro : DEFAULT_CONFLUENCES_CONTRO;
+  const availableBarrierOptions = customUser?.barrierOptions?.length ? customUser.barrierOptions : DEFAULT_BARRIER_OPTIONS;
 
   const form = useForm<TradeFormData>({
     resolver: zodResolver(tradeFormSchema),
@@ -104,6 +112,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
       emotion: editingTrade.emotion || "Neutrale",
       confluencesPro: editingTrade.confluencesPro || [],
       confluencesContro: editingTrade.confluencesContro || [],
+      alignedTimeframes: editingTrade.alignedTimeframes || [],
+      barrier: editingTrade.barrier || [],
       imageUrls: editingTrade.imageUrls || [],
       notes: editingTrade.notes || "",
     } : {
@@ -120,6 +130,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
       emotion: "Neutrale",
       confluencesPro: [],
       confluencesContro: [],
+      alignedTimeframes: [],
+      barrier: [],
       imageUrls: [],
       notes: "",
     }
@@ -133,6 +145,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
   const currentRr = watch("rr");
   const confluencesPro = watch("confluencesPro");
   const confluencesContro = watch("confluencesContro");
+  const alignedTimeframes = watch("alignedTimeframes");
+  const barrier = watch("barrier");
   const imageUrls = watch("imageUrls");
   const direction = watch("direction");
   const resultVal = watch("result");
@@ -147,6 +161,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
         emotion: editingTrade.emotion || "Neutrale",
         confluencesPro: editingTrade.confluencesPro || [],
         confluencesContro: editingTrade.confluencesContro || [],
+        alignedTimeframes: editingTrade.alignedTimeframes || [],
+        barrier: editingTrade.barrier || [],
         imageUrls: editingTrade.imageUrls || [],
         notes: editingTrade.notes || "",
       });
@@ -165,6 +181,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
         emotion: "Neutrale",
         confluencesPro: [],
         confluencesContro: [],
+        alignedTimeframes: [],
+        barrier: [],
         imageUrls: [],
         notes: "",
       });
@@ -252,6 +270,24 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
   const removeConfluence = (type: "pro" | "contro", value: string) => {
     const key = type === "pro" ? "confluencesPro" : "confluencesContro";
     setValue(key, getValues(key).filter((c) => c !== value));
+  };
+
+  const toggleAlignedTimeframe = (tf: string) => {
+    const current = getValues("alignedTimeframes");
+    if (current.includes(tf)) {
+      setValue("alignedTimeframes", current.filter((item) => item !== tf));
+    } else {
+      setValue("alignedTimeframes", [...current, tf]);
+    }
+  };
+
+  const toggleBarrier = (b: string) => {
+    const current = getValues("barrier");
+    if (current.includes(b)) {
+      setValue("barrier", current.filter((item) => item !== b));
+    } else {
+      setValue("barrier", [...current, b]);
+    }
   };
 
   return (
@@ -581,6 +617,55 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
             >
               Aggiungi Custom
             </Button>
+          </div>
+        </div>
+
+        {/* ALIGNED TIMEFRAMES & BARRIER */}
+        <div className="grid md:grid-cols-2 gap-6 bg-muted/10 p-4 rounded-lg border border-border/40">
+          <div className="space-y-3">
+            <Label className="text-primary font-medium">TF. Allineati (Macro)</Label>
+            <div className="flex flex-wrap gap-2">
+              {FIXED_ALIGNED_TIMEFRAMES.map((tf) => {
+                const isSelected = alignedTimeframes.includes(tf);
+                return (
+                  <Badge
+                    key={tf}
+                    variant={isSelected ? "default" : "outline"}
+                    className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
+                      ? "bg-primary hover:bg-primary/90 shadow-sm"
+                      : "hover:bg-primary/10 text-muted-foreground"
+                      }`}
+                    onClick={() => toggleAlignedTimeframe(tf)}
+                  >
+                    {tf}
+                  </Badge>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Seleziona i timeframe maggiori orientati nella direzione del tuo trade ({direction}).</p>
+          </div>
+
+          <div className="space-y-3">
+            <Label className="text-primary font-medium">Barrier (Microstrutture confermate)</Label>
+            <div className="flex flex-wrap gap-2">
+              {availableBarrierOptions.map((b: string) => {
+                const isSelected = barrier.includes(b);
+                return (
+                  <Badge
+                    key={b}
+                    variant={isSelected ? "default" : "outline"}
+                    className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
+                      ? "bg-blue-600 hover:bg-blue-700 shadow-sm text-white"
+                      : "hover:bg-blue-500/10 hover:border-blue-500/30 text-muted-foreground"
+                      }`}
+                    onClick={() => toggleBarrier(b)}
+                  >
+                    {b}
+                  </Badge>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Quali micro-strutture hanno confermato l'ingresso a mercato?</p>
           </div>
         </div>
 

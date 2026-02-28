@@ -79,9 +79,8 @@ export default function TradeDetailModal({
             <DialogTitle className="flex items-center gap-3">
               <span className="text-lg font-semibold">{trade.pair}</span>
               <span
-                className={`inline-flex items-center gap-1 text-sm ${
-                  trade.direction === "long" ? "text-emerald-500" : "text-red-500"
-                }`}
+                className={`inline-flex items-center gap-1 text-sm ${trade.direction === "long" ? "text-emerald-500" : "text-red-500"
+                  }`}
               >
                 {trade.direction === "long" ? (
                   <ArrowUp className="w-4 h-4" />
@@ -111,13 +110,12 @@ export default function TradeDetailModal({
               <div>
                 <p className="text-xs text-muted-foreground">Risultato Finale</p>
                 <p
-                  className={`font-mono text-sm font-medium ${
-                    trade.result === "target" || trade.result === "parziale"
+                  className={`font-mono text-sm font-medium ${trade.result === "target" || trade.result === "parziale"
                       ? "text-emerald-400"
                       : trade.result === "stop_loss"
-                      ? "text-red-400"
-                      : "text-yellow-400"
-                  }`}
+                        ? "text-red-400"
+                        : "text-yellow-400"
+                    }`}
                 >
                   {calculateResultPercent()}
                 </p>
@@ -158,6 +156,33 @@ export default function TradeDetailModal({
                     ))
                   ) : (
                     <span className="text-sm text-muted-foreground">Nessuna</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-primary mb-2 font-medium">TF. Allineati (Macro)</p>
+                <div className="flex flex-wrap gap-1">
+                  {trade.alignedTimeframes?.length > 0 ? (
+                    trade.alignedTimeframes.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="bg-primary/10 text-primary border-primary/20">{tag}</Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Nessuno</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-blue-500 mb-2 font-medium">Barrier (Micro)</p>
+                <div className="flex flex-wrap gap-1">
+                  {trade.barrier?.length > 0 ? (
+                    trade.barrier.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="bg-blue-500/10 text-blue-500 border-blue-500/20">{tag}</Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Nessuno</span>
                   )}
                 </div>
               </div>
@@ -209,9 +234,8 @@ export default function TradeDetailModal({
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`w-12 h-12 rounded-md overflow-hidden border-2 transition-colors ${
-                          index === currentImageIndex ? "border-primary" : "border-transparent"
-                        }`}
+                        className={`w-12 h-12 rounded-md overflow-hidden border-2 transition-colors ${index === currentImageIndex ? "border-primary" : "border-transparent"
+                          }`}
                         data-testid={`button-thumbnail-${index}`}
                       >
                         <img

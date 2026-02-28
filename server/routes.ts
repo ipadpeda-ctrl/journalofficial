@@ -263,13 +263,13 @@ export async function registerRoutes(
     }
   });
 
-  // Update user's settings (pairs, emotions, confluences)
+  // Update user's settings (pairs, emotions, confluences, barriers)
   app.patch("/api/auth/user", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
-      const { pairs, emotions, confluencesPro, confluencesContro } = req.body;
+      const { pairs, emotions, confluencesPro, confluencesContro, barrierOptions } = req.body;
 
-      const user = await storage.updateUserSettings(userId, { pairs, emotions, confluencesPro, confluencesContro });
+      const user = await storage.updateUserSettings(userId, { pairs, emotions, confluencesPro, confluencesContro, barrierOptions });
       if (user) {
         const { passwordHash, ...safeUser } = user;
         res.json(safeUser);
