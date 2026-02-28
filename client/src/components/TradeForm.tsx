@@ -532,7 +532,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                     variant={isSelected ? "default" : "outline"}
                     className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
                       ? "bg-emerald-500 hover:bg-emerald-600 shadow-sm"
-                      : "hover:border-emerald-500/50 hover:bg-emerald-500/10 text-muted-foreground"
+                      : "hover:border-emerald-500/50 hover:bg-emerald-500/10 text-white"
                       }`}
                     onClick={() => isSelected ? removeConfluence("pro", tag) : addConfluence("pro", tag)}
                   >
@@ -582,7 +582,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                   variant={isSelected ? "default" : "outline"}
                   className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
                     ? "bg-red-500 hover:bg-red-600 shadow-sm"
-                    : "hover:border-red-500/50 hover:bg-red-500/10 text-muted-foreground"
+                    : "hover:border-red-500/50 hover:bg-red-500/10 text-white"
                     }`}
                   onClick={() => isSelected ? removeConfluence("contro", tag) : addConfluence("contro", tag)}
                 >
@@ -623,7 +623,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
         {/* ALIGNED TIMEFRAMES & BARRIER */}
         <div className="grid md:grid-cols-2 gap-6 bg-muted/10 p-4 rounded-lg border border-border/40">
           <div className="space-y-3">
-            <Label className="text-primary font-semibold text-sm">TF. Allineati (Macro)</Label>
+            <Label className="text-cyan-400 font-semibold text-sm">TF. Allineati (Macro)</Label>
             <div className="flex flex-wrap gap-2">
               {FIXED_ALIGNED_TIMEFRAMES.map((tf) => {
                 const isSelected = alignedTimeframes.includes(tf);
@@ -632,8 +632,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                     key={tf}
                     variant={isSelected ? "default" : "outline"}
                     className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
-                      ? "bg-primary hover:bg-primary/90 shadow-sm"
-                      : "hover:bg-primary/10 text-muted-foreground"
+                      ? "bg-cyan-600 hover:bg-cyan-700 shadow-sm text-white border-cyan-500"
+                      : "hover:bg-cyan-500/10 hover:border-cyan-500/50 text-white"
                       }`}
                     onClick={() => toggleAlignedTimeframe(tf)}
                   >
@@ -648,7 +648,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
           </div>
 
           <div className="space-y-3">
-            <Label className="text-blue-500 font-semibold text-sm">Barrier (Microstrutture confermate)</Label>
+            <Label className="text-cyan-400 font-semibold text-sm">Barrier (Microstrutture confermate)</Label>
             <div className="flex flex-wrap gap-2">
               {availableBarrierOptions.map((b: string) => {
                 const isSelected = barrier.includes(b);
@@ -657,8 +657,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
                     key={b}
                     variant={isSelected ? "default" : "outline"}
                     className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
-                      ? "bg-blue-600 hover:bg-blue-700 shadow-sm text-white"
-                      : "hover:bg-blue-500/10 hover:border-blue-500/30 text-muted-foreground"
+                      ? "bg-cyan-600 hover:bg-cyan-700 shadow-sm text-white border-cyan-500"
+                      : "hover:bg-cyan-500/10 hover:border-cyan-500/50 text-white"
                       }`}
                     onClick={() => toggleBarrier(b)}
                   >
