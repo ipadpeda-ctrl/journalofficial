@@ -123,6 +123,7 @@ export default function Dashboard() {
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [duplicateTradeData, setDuplicateTradeData] = useState<Partial<TradeFormData> | null>(null);
   const [duplicateKey, setDuplicateKey] = useState(0);
+  const [submitKey, setSubmitKey] = useState(0);
 
   const [filters, setFilters] = useState<TradeFilters>(defaultFilters);
 
@@ -204,7 +205,13 @@ export default function Dashboard() {
     if (editingTrade) {
       updateTradeMutation.mutate({ id: editingTrade.id, data: formData }, { onSuccess: () => { setEditingTrade(null); handleTabChange("operations"); } });
     } else {
-      createTradeMutation.mutate(formData, { onSuccess: () => { setDuplicateTradeData(null); handleTabChange("operations"); } });
+      createTradeMutation.mutate(formData, {
+        onSuccess: () => {
+          setDuplicateTradeData(null);
+          setSubmitKey(prev => prev + 1);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      });
     }
   };
 
@@ -229,8 +236,7 @@ export default function Dashboard() {
         barrier: lastTrade.barrier || []
       });
       setDuplicateKey(prev => prev + 1);
-      handleTabChange("new-entry");
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -298,7 +304,7 @@ export default function Dashboard() {
 
         {activeTab === "new-entry" && (
           <TradeForm
-            key={duplicateTradeData ? `duplicate_${duplicateKey}` : (editingTrade ? editingTrade.id : 'new')}
+            key={duplicateTradeData ? `duplicate_${duplicateKey}` : (editingTrade ? editingTrade.id : `new_${submitKey}`)}
             onSubmit={handleSubmitTrade}
             onDuplicate={handleDuplicate}
             editingTrade={editingTrade ? { ...editingTrade, target: editingTrade.target.toString(), stopLoss: editingTrade.stopLoss.toString(), slPips: editingTrade.slPips?.toString() || "", tpPips: editingTrade.tpPips?.toString() || "", rr: editingTrade.rr?.toString() || "", alignedTimeframes: editingTrade.alignedTimeframes || [], barrier: editingTrade.barrier || [] } : undefined}
