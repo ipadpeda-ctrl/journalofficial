@@ -15,14 +15,14 @@ const months = [
 ];
 
 interface MonthlyGoalsProps {
-  trades: { date: string; result: string; target?: number; stopLoss?: number }[];
+  trades: { date: string; result: string; target?: number; stopLoss?: number; pnl?: number }[];
 }
 
 export default function MonthlyGoals({ trades }: MonthlyGoalsProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-  
+
   const [targetTrades, setTargetTrades] = useState("");
   const [targetWinRate, setTargetWinRate] = useState("");
   const [targetProfit, setTargetProfit] = useState("");
@@ -56,9 +56,14 @@ export default function MonthlyGoals({ trades }: MonthlyGoalsProps) {
     const winRate = total > 0 ? (wins / total) * 100 : 0;
     let profit = 0;
     monthlyTrades.forEach((t) => {
-      if (t.result === "target") profit += (t.target || 0) * 100;
-      else if (t.result === "stop_loss") profit -= (t.stopLoss || 0) * 100;
-      else if (t.result === "parziale") profit += (t.target || 0) * 50;
+      if (t.pnl !== undefined && t.pnl !== 0) {
+        profit += t.pnl; // Se c'è PNL salvato nel DB usa quello
+      } else {
+        // Fallback
+        if (t.result === "target") profit += (t.target || 0) * 100;
+        else if (t.result === "stop_loss") profit -= (t.stopLoss || 0) * 100;
+        else if (t.result === "parziale") profit += (t.target || 0) * 50;
+      }
     });
     return { total, winRate, profit };
   }, [monthlyTrades]);
