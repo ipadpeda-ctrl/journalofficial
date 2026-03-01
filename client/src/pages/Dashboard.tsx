@@ -8,7 +8,6 @@ import StatCard from "@/components/StatCard";
 import TradeForm, { TradeFormData } from "@/components/TradeForm";
 import TradesTable, { Trade } from "@/components/TradesTable";
 import TradeDetailModal from "@/components/TradeDetailModal";
-import { EquityCurveChart } from "@/components/Charts";
 import Settings from "@/components/Settings";
 import Calendar from "@/components/Calendar";
 import WeeklyRecap from "@/components/WeeklyRecap";
@@ -19,7 +18,7 @@ import MonthlyComparison from "@/components/MonthlyComparison";
 import TradingDiary from "@/components/TradingDiary";
 import MonthlyGoals from "@/components/MonthlyGoals";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Download, Filter, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Trade as SchemaTrade } from "@shared/schema";
@@ -116,6 +115,7 @@ export default function Dashboard() {
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [duplicateTradeData, setDuplicateTradeData] = useState<Partial<TradeFormData> | null>(null);
 
   const [filters, setFilters] = useState<TradeFilters>(defaultFilters);
 
@@ -202,9 +202,29 @@ export default function Dashboard() {
   };
 
   const handleEditTrade = (trade: Trade) => { setEditingTrade(trade); setIsDetailModalOpen(false); handleTabChange("new-entry"); };
-  const handleCancelEdit = () => setEditingTrade(null);
+  const handleCancelEdit = () => { setEditingTrade(null); setDuplicateTradeData(null); };
   const handleRowClick = (trade: Trade) => { setSelectedTrade(trade); setIsDetailModalOpen(true); };
   const handleDeleteTrade = (id: string) => { deleteTradeMutation.mutate(id); if (editingTrade?.id === id) setEditingTrade(null); };
+
+  const handleDuplicate = () => {
+    if (trades.length > 0) {
+      const lastTrade = trades.reduce((prev, current) => (new Date(prev.date) > new Date(current.date) ? prev : current), trades[0]);
+      setDuplicateTradeData({
+        ...lastTrade,
+        date: new Date().toISOString().split("T")[0],
+        time: new Date().toTimeString().slice(0, 5),
+        target: lastTrade.target.toString(),
+        stopLoss: lastTrade.stopLoss.toString(),
+        slPips: lastTrade.slPips?.toString() || "",
+        tpPips: lastTrade.tpPips?.toString() || "",
+        rr: lastTrade.rr?.toString() || "",
+        alignedTimeframes: lastTrade.alignedTimeframes || [],
+        barrier: lastTrade.barrier || []
+      });
+      handleTabChange("new-entry");
+      window.scrollTo(0, 0);
+    }
+  };
 
 
 
@@ -269,7 +289,14 @@ export default function Dashboard() {
         )}
 
         {activeTab === "new-entry" && (
-          <TradeForm onSubmit={handleSubmitTrade} onDuplicate={() => console.log("Duplicate")} editingTrade={editingTrade ? { ...editingTrade, target: editingTrade.target.toString(), stopLoss: editingTrade.stopLoss.toString(), slPips: editingTrade.slPips?.toString() || "", tpPips: editingTrade.tpPips?.toString() || "", rr: editingTrade.rr?.toString() || "", alignedTimeframes: editingTrade.alignedTimeframes || [], barrier: editingTrade.barrier || [] } : undefined} onCancelEdit={handleCancelEdit} />
+          <TradeForm
+            key={duplicateTradeData ? 'duplicate' : (editingTrade ? editingTrade.id : 'new')}
+            onSubmit={handleSubmitTrade}
+            onDuplicate={handleDuplicate}
+            editingTrade={editingTrade ? { ...editingTrade, target: editingTrade.target.toString(), stopLoss: editingTrade.stopLoss.toString(), slPips: editingTrade.slPips?.toString() || "", tpPips: editingTrade.tpPips?.toString() || "", rr: editingTrade.rr?.toString() || "", alignedTimeframes: editingTrade.alignedTimeframes || [], barrier: editingTrade.barrier || [] } : undefined}
+            initialData={duplicateTradeData || undefined}
+            onCancelEdit={handleCancelEdit}
+          />
         )}
 
         {activeTab === "settings" && <Settings
@@ -282,7 +309,7 @@ export default function Dashboard() {
           onSave={(settings) => console.log("Settings saved:", settings)}
         />}
         {activeTab === "diary" && <TradingDiary />}
-        {activeTab === "goals" && <MonthlyGoals trades={trades.map((t) => ({ date: t.date, result: t.result, target: t.target, stopLoss: t.stopLoss }))} />}
+        {activeTab === "goals" && <MonthlyGoals trades={trades.map((t) => ({ date: t.date, result: t.result, target: t.target, stopLoss: t.stopLoss, pnl: t.pnl }))} />}
       </main>
     </div>
   );

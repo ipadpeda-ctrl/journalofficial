@@ -65,6 +65,8 @@ const mockTrades: Trade[] = [
     emotion: "Sicuro",
     confluencesPro: ["Trend forte", "Pattern chiaro", "Volume alto"],
     confluencesContro: ["Orario sfavorevole"],
+    alignedTimeframes: [],
+    barrier: [],
     imageUrls: [],
     notes: "",
   },

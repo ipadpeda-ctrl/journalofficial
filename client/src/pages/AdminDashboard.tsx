@@ -61,6 +61,12 @@ export default function AdminDashboard() {
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      setLocation("/");
+    }
+  }, [authLoading, isAdmin, setLocation]);
+
   const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     enabled: isAdmin,

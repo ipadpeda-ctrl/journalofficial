@@ -11,6 +11,7 @@ import { Moon, Sun, TrendingUp, LogOut, Shield, User as UserIcon } from "lucide-
 import { useTheme } from "./ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Menu } from "lucide-react";
 
 type Tab = "new-entry" | "operations" | "calendario" | "statistiche" | "diary" | "goals" | "settings" | "admin";
 
@@ -50,17 +51,16 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
         <TrendingUp className="w-6 h-6 text-chart-1" />
         <span className="font-semibold text-lg">Trading Journal</span>
       </div>
-      
-      <nav className="flex-1 flex items-center gap-1">
+
+      <nav className="hidden md:flex flex-1 items-center gap-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-              activeTab === tab.id
+            className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === tab.id
                 ? "text-foreground"
                 : "text-muted-foreground hover-elevate"
-            }`}
+              }`}
             data-testid={`tab-${tab.id}`}
           >
             {tab.adminOnly && <Shield className="w-3 h-3 inline mr-1" />}
@@ -71,6 +71,25 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
           </button>
         ))}
       </nav>
+
+      {/* Mobile Nav */}
+      <div className="md:hidden flex-1 flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Menu className="w-5 h-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {tabs.map((tab) => (
+              <DropdownMenuItem key={tab.id} onClick={() => onTabChange(tab.id)}>
+                {tab.adminOnly && <Shield className="w-3 h-3 mr-2" />}
+                {tab.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <Button
         size="icon"

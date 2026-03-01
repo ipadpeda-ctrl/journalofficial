@@ -1,0 +1,283 @@
+# 🔍 Revisione Completa del Codebase — Bug, Errori e Miglioramenti
+
+Ho analizzato tutti i file del progetto (9 server, 8 pagine, 25+ componenti, 3 hooks, 3 lib, configurazione). Di seguito trovi i problemi categorizzati per gravità.
+
+---
+
+## 🔴 Bug Critici / Sicurezza
+
+### 1. Error Handler ri-lancia l'errore e crasha il server
+**File**: [index.ts](file:///c:/Users/matteop/Desktop/journal-main/server/index.ts#L65-L71)
+
+```javascript
+app.use((err, _req, res, _next) => {
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  res.status(status).json({ message });
+  throw err; // ⚠️ BUG: Questo ri-lancia l'errore dopo aver risposto, potrebbe crashare il server!
+});
+```
+**Fix**: Sostituire `throw err` con `console.error(err)` per loggare senza crashare.
+
+---
+
+### 2. Password di default esposta nella risposta API
+**File**: [routes.ts](file:///c:/Users/matteop/Desktop/journal-main/server/routes.ts#L521-L525)
+
+```javascript
+const defaultPassword = "password123";
+// ...
+res.json({ message: `Password resettata con successo a: ${defaultPassword}` }); 
+// ⚠️ La password in chiaro viene inviata nella risposta HTTP!
+```
+**Fix**: Non rivelare la password nella risposta. Usare un messaggio generico tipo `"Password resettata. L'utente deve cambiarla al primo accesso."`.
+
+---
+
+### 3. Session secret hardcoded e debole
+**File**: [localAuth.ts](file:///c:/Users/matteop/Desktop/journal-main/server/localAuth.ts#L27)
+
+```javascript
+secret: process.env.SESSION_SECRET || "trading-journal-secret-key-change-in-production",
+// ⚠️ Se SESSION_SECRET non è impostato, usa un secret débole e prevedibile
+```
+**Fix**: In produzione, far fallire l'avvio se `SESSION_SECRET` non è definito. In development è accettabile il fallback.
+
+---
+
+### 4. Update trade senza validazione del body
+**File**: [routes.ts](file:///c:/Users/matteop/Desktop/journal-main/server/routes.ts#L313-L326)
+
+```javascript
+app.patch("/api/trades/:id", isAuthenticated, async (req, res) => {
+  const trade = await storage.updateTrade(id, userId, req.body); // ⚠️ req.body non validato
+});
+```
+**Fix**: Validare `req.body` con uno schema Zod parziale prima di passarlo a `storage.updateTrade`.
+
+---
+
+### 5. Route `/api/auth/reset-password` senza rate limiting
+**File**: [routes.ts](file:///c:/Users/matteop/Desktop/journal-main/server/routes.ts#L159)
+
+La route `POST /api/auth/reset-password` non ha `authLimiter`, permettendo brute force sul token.
+
+**Fix**: Aggiungere `authLimiter` alla route.
+
+---
+
+### 6. `parseInt` senza controllo NaN
+**File**: [routes.ts](file:///c:/Users/matteop/Desktop/journal-main/server/routes.ts#L316)
+
+```javascript
+const id = parseInt(req.params.id); // ⚠️ Nessun controllo su NaN
+```
+Questo accade in tutte le route `PATCH /trades/:id`, `DELETE /trades/:id`, `DELETE /diary/:id`, `DELETE /goals/:id`.
+
+**Fix**: Aggiungere `if (isNaN(id)) return res.status(400).json(...)`.
+
+---
+
+## 🟡 Bug Logici / Dati
+
+### 7. `staleTime: Infinity` impedisce il refresh dei dati
+**File**: [queryClient.ts](file:///c:/Users/matteop/Desktop/journal-main/client/src/lib/queryClient.ts#L50)
+
+```javascript
+staleTime: Infinity, // I dati non vengono MAI ri-fetchiati automaticamente
+```
+Se un altro dispositivo modifica i dati, la UI non li aggiorna finché non si fa un refresh manuale.
+
+**Fix**: Ridurre a `5 * 60 * 1000` (5 min) o simile, e riabilitare `refetchOnWindowFocus: true`.
+
+---
+
+### 8. `authUtils.ts` con regex che non matcha i messaggi in italiano
+**File**: [authUtils.ts](file:///c:/Users/matteop/Desktop/journal-main/client/src/lib/authUtils.ts#L2)
+
+```javascript
+return /^401: .*Unauthorized/.test(error.message); 
+// ⚠️ Il backend risponde "Non autenticato", non "Unauthorized"
+```
+**Fix**: Cambiare la regex per matchare anche i messaggi italiani: `/^401:/.test(error.message)`.
+
+---
+
+### 9. `MonthlyComparison` P&L calcolato con formula errata
+**File**: [MonthlyComparison.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/components/MonthlyComparison.tsx#L22-L31)
+
+```javascript
+function calculateTradePnl(trade: Trade): number {
+  if (trade.result === "target") return trade.target * 100; // ⚠️ Moltiplica per 100 arbitrariamente
+  ...
+```
+Il trade ha un campo `pnl` nel database che contiene il P&L reale, ma questa funzione lo ignora completamente e calcola un valore fittizio.
+
+**Fix**: Usare `trade.pnl` se disponibile, con fallback al calcolo attuale.
+
+---
+
+### 10. `MonthlyGoals` riceve trade con campi limitati
+**File**: [Dashboard.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/pages/Dashboard.tsx#L285)
+
+```jsx
+<MonthlyGoals trades={trades.map((t) => ({ date: t.date, result: t.result, target: t.target, stopLoss: t.stopLoss }))} />
+```
+Il componente riceve solo 4 campi, ma potrebbe aver bisogno di `pnl` per calcoli precisi.
+
+---
+
+### 11. Nessuna conferma prima di eliminare un trade
+**File**: [TradesTable.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/components/TradesTable.tsx#L174) e [TradeDetailModal.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/components/TradeDetailModal.tsx#L270-L273)
+
+L'eliminazione avviene direttamente al click senza un `confirm()` di conferma.
+
+**Fix**: Aggiungere un dialog di conferma prima di cancellare.
+
+---
+
+## 🟠 Dead Code / Pulizia
+
+### 12. `replitAuth.ts` non usato
+**File**: [replitAuth.ts](file:///c:/Users/matteop/Desktop/journal-main/server/replitAuth.ts)
+
+Il progetto usa `localAuth.ts`. Questo file di 192 righe è dead code completo, inclusa la dipendenza `openid-client` in `package.json`.
+
+**Fix**: Eliminare il file e rimuovere le dipendenze inutili (`openid-client`, `memoizee`).
+
+---
+
+### 13. `reset-pwd.cjs` script rimasto nel root
+**File**: [reset-pwd.cjs](file:///c:/Users/matteop/Desktop/journal-main/reset-pwd.cjs)
+
+Script di utility per il reset manuale delle password, potenziale rischio di sicurezza.
+
+**Fix**: Eliminare o spostare in una cartella `scripts/` privata.
+
+---
+
+### 14. Dipendenze inutili in `package.json`
+**File**: [package.json](file:///c:/Users/matteop/Desktop/journal-main/package.json)
+
+| Dipendenza | Motivo |
+|---|---|
+| `resend` | Presente ma non importata da nessun file (si usa `nodemailer`) |
+| `openid-client` | Usata solo in `replitAuth.ts` (dead code) |
+| `memoizee` | Usata solo in `replitAuth.ts` |
+| `memorystore` | Non importata da nessun file |
+| `ws` | Non usata in nessun file server |
+| `framer-motion` | Non importata in nessun componente |
+| `react-icons` | Non importata (si usa `lucide-react`) |
+| `@replit/vite-plugin-*` | Plugin specifici Replit, inutili se si deploya altrove |
+
+---
+
+### 15. Import inutilizzati nei componenti
+
+| File | Import non usato |
+|---|---|
+| [Dashboard.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/pages/Dashboard.tsx#L22) | `Download`, `Filter`, `X` da `lucide-react` |
+| [Dashboard.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/pages/Dashboard.tsx#L11) | `EquityCurveChart` importato ma non usato nel render |
+| [TradesTable.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/components/TradesTable.tsx#L19) | `Select, SelectContent, SelectItem, SelectTrigger, SelectValue` |
+| [TradeForm.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/components/TradeForm.tsx#L15) | `ImageIcon` da `lucide-react` |
+| [AdminDashboard.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/pages/AdminDashboard.tsx#L1) | `useEffect` da `react` |
+| [Register.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/pages/Register.tsx#L1) | `useState` importato ma `pendingApproval` potrebbe essere un ref |
+
+---
+
+## 🔵 Miglioramenti Consigliati
+
+### 16. Header non responsive su mobile
+**File**: [Header.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/components/Header.tsx)
+
+La navigazione con 8 tab non ha alcun layout mobile (menu hamburger). Su schermi piccoli i tab traboccano.
+
+**Fix**: Aggiungere un menu hamburger o `Sheet` laterale per mobile.
+
+---
+
+### 17. `onDuplicate` placeholder
+**File**: [Dashboard.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/pages/Dashboard.tsx#L272)
+
+```jsx
+onDuplicate={() => console.log("Duplicate")}
+```
+Il pulsante "Duplica Ultima" nel `TradeForm` non fa nulla.
+
+**Fix**: Implementare la logica di duplicazione che copia l'ultimo trade inserito.
+
+---
+
+### 18. `AdminDashboard` non protetto lato client
+**File**: [AdminDashboard.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/pages/AdminDashboard.tsx)
+
+Il check `isAdmin` avviene dopo il render. Un utente non-admin vede brevemente il layout prima del messaggio di errore. Le API sono protette, ma l'esperienza UX non è ideale.
+
+**Fix**: Fare il check prima di mostrare qualsiasi contenuto, o spostare la verifica nel router.
+
+---
+
+### 19. Nessun test automatizzato
+Non esistono file di test nel progetto. Nessun framework di testing è configurato.
+
+**Fix**: Aggiungere almeno test unitari per le funzioni critiche (auth, storage) e E2E per i flussi principali.
+
+---
+
+### 20. `colSpan` errato nella tabella Trades
+**File**: [TradesTable.tsx](file:///c:/Users/matteop/Desktop/journal-main/client/src/components/TradesTable.tsx#L114)
+
+```jsx
+<TableCell colSpan={11} ...>  // ⚠️ La tabella ha 12 colonne, non 11
+```
+**Fix**: Cambiare a `colSpan={12}`.
+
+---
+
+## Proposed Changes
+
+Classifico gli interventi per priorità di impatto:
+
+| Priorità | # | Descrizione | File |
+|:---:|:---:|---|---|
+| 🔴 | 1 | Fix `throw err` nel error handler | `server/index.ts` |
+| 🔴 | 2 | Rimuovere password dalla risposta admin reset | `server/routes.ts` |
+| 🔴 | 3 | Validare session secret in produzione | `server/localAuth.ts` |
+| 🔴 | 4 | Validare `req.body` in PATCH trade | `server/routes.ts` |
+| 🔴 | 5 | Rate limit su reset-password | `server/routes.ts` |
+| 🔴 | 6 | Fix parseInt NaN su tutte le route | `server/routes.ts` |
+| 🟡 | 7 | Fix `staleTime: Infinity` | `client/src/lib/queryClient.ts` |
+| 🟡 | 8 | Fix regex in `authUtils.ts` | `client/src/lib/authUtils.ts` |
+| 🟡 | 9 | Fix P&L in MonthlyComparison | `client/src/components/MonthlyComparison.tsx` |
+| 🟡 | 10 | Passare `pnl` a MonthlyGoals | `client/src/pages/Dashboard.tsx` |
+| 🟡 | 11 | Dialog conferma prima delete | `TradesTable.tsx`, `TradeDetailModal.tsx` |
+| 🟠 | 12 | Rimuovere `replitAuth.ts` | `server/replitAuth.ts` |
+| 🟠 | 13 | Rimuovere `reset-pwd.cjs` | `reset-pwd.cjs` |
+| 🟠 | 14 | Cleanup dipendenze inutili | `package.json` |
+| 🟠 | 15 | Rimuovere import non usati | Vari componenti |
+| 🔵 | 16 | Header responsive (hamburger menu) | `Header.tsx` |
+| 🔵 | 17 | Implementare "Duplica Ultima" | `Dashboard.tsx` |
+| 🔵 | 18 | Protezione route admin lato client | `AdminDashboard.tsx` |
+| 🔵 | 19 | Aggiungere test automatizzati | Nuovo |
+| 🔵 | 20 | Fix colSpan tabella | `TradesTable.tsx` |
+
+## User Review Required
+
+> [!IMPORTANT]
+> Questo piano è **solo di analisi**. Nessun file è stato modificato. Dimmi quali interventi vuoi che implementi, in che ordine, o se vuoi raggruppare tutto in un unico ciclo di lavoro.
+
+> [!WARNING]
+> I primi 6 punti (🔴) includono **vulnerabilità di sicurezza** e **bug che possono crashare il server**. Consiglio di risolverli il prima possibile.
+
+## Verification Plan
+
+### Verifica Automatizzata
+- Dopo ogni fix, eseguire `npx tsc --noEmit` per verificare che non ci siano errori TypeScript
+- Eseguire `npm run build` per verificare che la build di produzione funzioni
+
+### Verifica Manuale
+- Avviare il server con `npm run dev` e testare i flussi critici:
+  1. Login/Logout
+  2. Creazione e modifica di un trade
+  3. Pannello Admin (reset password)
+  4. Navigazione tra le tab (soprattutto su mobile se si implementa il fix #16)

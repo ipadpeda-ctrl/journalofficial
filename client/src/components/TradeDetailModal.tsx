@@ -111,10 +111,10 @@ export default function TradeDetailModal({
                 <p className="text-xs text-muted-foreground">Risultato Finale</p>
                 <p
                   className={`font-mono text-sm font-medium ${trade.result === "target" || trade.result === "parziale"
-                      ? "text-emerald-400"
-                      : trade.result === "stop_loss"
-                        ? "text-red-400"
-                        : "text-yellow-400"
+                    ? "text-emerald-400"
+                    : trade.result === "stop_loss"
+                      ? "text-red-400"
+                      : "text-yellow-400"
                     }`}
                 >
                   {calculateResultPercent()}
@@ -268,8 +268,10 @@ export default function TradeDetailModal({
                 size="sm"
                 className="text-red-500"
                 onClick={() => {
-                  onDelete?.(trade.id);
-                  onOpenChange(false);
+                  if (window.confirm("Sei sicuro di voler eliminare questo trade?")) {
+                    onDelete?.(trade.id);
+                    onOpenChange(false);
+                  }
                 }}
                 data-testid="button-delete-trade-modal"
               >

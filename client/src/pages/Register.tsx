@@ -74,7 +74,7 @@ export default function Register() {
             <Alert>
               <AlertTitle>In attesa di approvazione</AlertTitle>
               <AlertDescription>
-                Il tuo account è stato creato ma deve essere approvato da un amministratore 
+                Il tuo account è stato creato ma deve essere approvato da un amministratore
                 prima di poter accedere. Riceverai una notifica quando il tuo account sarà attivo.
               </AlertDescription>
             </Alert>

@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, Copy, Upload, Image as ImageIcon } from "lucide-react";
+import { Plus, X, Copy, Upload } from "lucide-react";
 import ConfluenceTag from "./ConfluenceTag";
 import { useAuth } from "@/hooks/useAuth";
 import { useForm, Controller } from "react-hook-form";
@@ -39,6 +39,7 @@ interface TradeFormProps {
   onSubmit?: (trade: TradeFormData) => void;
   onDuplicate?: () => void;
   editingTrade?: TradeFormData & { id?: string };
+  initialData?: Partial<TradeFormData>;
   onCancelEdit?: () => void;
 }
 
@@ -84,7 +85,7 @@ export const tradeFormSchema = z.object({
   notes: z.string().optional(),
 });
 
-export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCancelEdit }: TradeFormProps) {
+export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initialData, onCancelEdit }: TradeFormProps) {
   const { user } = useAuth();
 
   const customUser = user as CustomUser | null;
@@ -116,6 +117,25 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
       barrier: editingTrade.barrier || [],
       imageUrls: editingTrade.imageUrls || [],
       notes: editingTrade.notes || "",
+    } : initialData ? {
+      // Default per la duplicazione
+      date: initialData.date || new Date().toISOString().split("T")[0],
+      time: initialData.time || new Date().toTimeString().slice(0, 5),
+      pair: initialData.pair || "",
+      direction: initialData.direction || "long",
+      target: initialData.target || "",
+      stopLoss: initialData.stopLoss || "1.00",
+      slPips: initialData.slPips || "",
+      tpPips: initialData.tpPips || "",
+      rr: initialData.rr || "",
+      result: initialData.result || "target",
+      emotion: initialData.emotion || "Neutrale",
+      confluencesPro: initialData.confluencesPro || [],
+      confluencesContro: initialData.confluencesContro || [],
+      alignedTimeframes: initialData.alignedTimeframes || [],
+      barrier: initialData.barrier || [],
+      imageUrls: initialData.imageUrls || [],
+      notes: initialData.notes || "",
     } : {
       date: new Date().toISOString().split("T")[0],
       time: new Date().toTimeString().slice(0, 5),
@@ -166,6 +186,26 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
         imageUrls: editingTrade.imageUrls || [],
         notes: editingTrade.notes || "",
       });
+    } else if (initialData) {
+      form.reset({
+        date: initialData.date || new Date().toISOString().split("T")[0],
+        time: initialData.time || new Date().toTimeString().slice(0, 5),
+        pair: initialData.pair || "",
+        direction: initialData.direction || "long",
+        target: initialData.target || "",
+        stopLoss: initialData.stopLoss || "1.00",
+        slPips: initialData.slPips || "",
+        tpPips: initialData.tpPips || "",
+        rr: initialData.rr || "",
+        result: initialData.result || "target",
+        emotion: initialData.emotion || "Neutrale",
+        confluencesPro: initialData.confluencesPro || [],
+        confluencesContro: initialData.confluencesContro || [],
+        alignedTimeframes: initialData.alignedTimeframes || [],
+        barrier: initialData.barrier || [],
+        imageUrls: initialData.imageUrls || [],
+        notes: initialData.notes || "",
+      });
     } else {
       form.reset({
         date: new Date().toISOString().split("T")[0],
@@ -187,7 +227,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, onCance
         notes: "",
       });
     }
-  }, [editingTrade?.id, form]);
+  }, [editingTrade?.id, initialData, form]);
 
   const calculateRR = (sl: string, tp: string): number => {
     const slVal = parseFloat(sl);

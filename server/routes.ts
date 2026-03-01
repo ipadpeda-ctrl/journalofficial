@@ -156,7 +156,7 @@ export async function registerRoutes(
   });
 
   // Reset password with token
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
     try {
       const { token, password } = req.body;
       if (!token || !password) {
@@ -314,13 +314,19 @@ export async function registerRoutes(
     try {
       const userId = req.user!.id;
       const id = parseInt(req.params.id);
-      const trade = await storage.updateTrade(id, userId, req.body);
+      if (isNaN(id)) return res.status(400).json({ message: "ID non valido" });
+
+      const validatedData = insertTradeSchema.partial().parse(req.body);
+      const trade = await storage.updateTrade(id, userId, validatedData);
       if (!trade) {
         return res.status(404).json({ message: "Trade non trovato" });
       }
       res.json(trade);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating trade:", error);
+      if (error.errors) {
+        return res.status(400).json({ message: error.errors[0]?.message || "Dati non validi" });
+      }
       res.status(400).json({ message: "Errore nell'aggiornamento del trade" });
     }
   });
@@ -330,6 +336,8 @@ export async function registerRoutes(
     try {
       const userId = req.user!.id;
       const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "ID non valido" });
+
       const deleted = await storage.deleteTrade(id, userId);
       if (!deleted) {
         return res.status(404).json({ message: "Trade non trovato" });
@@ -370,6 +378,8 @@ export async function registerRoutes(
     try {
       const userId = req.user!.id;
       const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "ID non valido" });
+
       const deleted = await storage.deleteDiary(id, userId);
       if (!deleted) {
         return res.status(404).json({ message: "Voce diario non trovata" });
@@ -410,6 +420,8 @@ export async function registerRoutes(
     try {
       const userId = req.user!.id;
       const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "ID non valido" });
+
       const deleted = await storage.deleteGoal(id, userId);
       if (!deleted) {
         return res.status(404).json({ message: "Obiettivo non trovato" });
@@ -522,7 +534,7 @@ export async function registerRoutes(
       const passwordHash = await hashPassword(defaultPassword);
       await storage.updateUserPassword(id, passwordHash);
 
-      res.json({ message: `Password resettata con successo a: ${defaultPassword}` });
+      res.json({ message: "Password resettata con successo. L'utente deve cambiarla al primo accesso." });
     } catch (error) {
       console.error("Error resetting user password:", error);
       res.status(500).json({ message: "Errore nel reset della password" });

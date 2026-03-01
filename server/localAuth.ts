@@ -23,8 +23,12 @@ declare global {
 }
 
 export function setupLocalAuth(app: Express) {
+  if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
+    throw new Error("SESSION_SECRET must be set in production environment");
+  }
+
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "trading-journal-secret-key-change-in-production",
+    secret: process.env.SESSION_SECRET || "trading-journal-dev-secret-key",
     resave: false,
     saveUninitialized: false,
     store: new PostgresSessionStore({
@@ -54,7 +58,7 @@ export function setupLocalAuth(app: Express) {
       async (email, password, done) => {
         try {
           const user = await storage.getUserByEmail(email.toLowerCase());
-          
+
           if (!user) {
             return done(null, false, { message: "Email o password non corretti" });
           }
@@ -133,7 +137,7 @@ export const isAdmin: RequestHandler = async (req, res, next) => {
   if (!req.isAuthenticated() || !req.user) {
     return res.status(401).json({ message: "Non autenticato" });
   }
-  
+
   const user = await storage.getUser(req.user.id);
   if (!user || (user.role !== "admin" && user.role !== "super_admin")) {
     return res.status(403).json({ message: "Accesso admin richiesto" });
@@ -145,7 +149,7 @@ export const isSuperAdmin: RequestHandler = async (req, res, next) => {
   if (!req.isAuthenticated() || !req.user) {
     return res.status(401).json({ message: "Non autenticato" });
   }
-  
+
   const user = await storage.getUser(req.user.id);
   if (!user || user.role !== "super_admin") {
     return res.status(403).json({ message: "Accesso super admin richiesto" });

@@ -10,13 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUp, ArrowDown, Pencil, Trash2, Search, Filter } from "lucide-react";
 import ConfluenceTag from "./ConfluenceTag";
@@ -111,7 +104,7 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
           <TableBody>
             {filteredTrades.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                   Nessuna operazione trovata
                 </TableCell>
               </TableRow>
@@ -171,7 +164,12 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => onDelete?.(trade.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm("Sei sicuro di voler eliminare questo trade?")) {
+                            onDelete?.(trade.id);
+                          }
+                        }}
                         data-testid={`button-delete-trade-${trade.id}`}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -246,7 +244,14 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
                   <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => onEdit?.(trade)}>
                     <Pencil className="w-3 h-3" />
                   </Button>
-                  <Button size="icon" variant="outline" className="h-8 w-8 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => onDelete?.(trade.id)}>
+                  <Button size="icon" variant="outline" className="h-8 w-8 text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm("Sei sicuro di voler eliminare questo trade?")) {
+                        onDelete?.(trade.id);
+                      }
+                    }}
+                  >
                     <Trash2 className="w-3 h-3" />
                   </Button>
                 </div>

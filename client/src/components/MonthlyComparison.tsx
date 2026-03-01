@@ -20,6 +20,10 @@ interface MonthlyData {
 }
 
 function calculateTradePnl(trade: Trade): number {
+  if (trade.pnl !== undefined && trade.pnl !== 0) {
+    return trade.pnl; // Se inserito da backend e non 0, usa quello
+  }
+
   if (trade.result === "target") {
     return trade.target * 100;
   } else if (trade.result === "stop_loss") {
