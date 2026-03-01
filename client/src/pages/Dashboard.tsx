@@ -98,6 +98,12 @@ export default function Dashboard() {
   }, [location]);
 
   const handleTabChange = (tab: Tab) => {
+    setEditingTrade(null);
+    setDuplicateTradeData(null);
+    if (tab === "new-entry") {
+      setLocation("/");
+      return;
+    }
     switch (tab) {
       case "admin": setLocation("/admin"); break; // <-- PUNTO CRUCIALE: Se admin, vai su /admin
       case "operations": setLocation("/operations"); break;
@@ -116,6 +122,7 @@ export default function Dashboard() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [duplicateTradeData, setDuplicateTradeData] = useState<Partial<TradeFormData> | null>(null);
+  const [duplicateKey, setDuplicateKey] = useState(0);
 
   const [filters, setFilters] = useState<TradeFilters>(defaultFilters);
 
@@ -197,7 +204,7 @@ export default function Dashboard() {
     if (editingTrade) {
       updateTradeMutation.mutate({ id: editingTrade.id, data: formData }, { onSuccess: () => { setEditingTrade(null); handleTabChange("operations"); } });
     } else {
-      createTradeMutation.mutate(formData, { onSuccess: () => handleTabChange("operations") });
+      createTradeMutation.mutate(formData, { onSuccess: () => { setDuplicateTradeData(null); handleTabChange("operations"); } });
     }
   };
 
@@ -208,19 +215,20 @@ export default function Dashboard() {
 
   const handleDuplicate = () => {
     if (trades.length > 0) {
-      const lastTrade = trades.reduce((prev, current) => (new Date(prev.date) > new Date(current.date) ? prev : current), trades[0]);
+      const lastTrade = [...trades].sort((a, b) => parseInt(b.id || "0") - parseInt(a.id || "0"))[0];
       setDuplicateTradeData({
         ...lastTrade,
         date: new Date().toISOString().split("T")[0],
         time: new Date().toTimeString().slice(0, 5),
-        target: lastTrade.target.toString(),
-        stopLoss: lastTrade.stopLoss.toString(),
+        target: lastTrade.target?.toString() || "",
+        stopLoss: lastTrade.stopLoss?.toString() || "1.00",
         slPips: lastTrade.slPips?.toString() || "",
         tpPips: lastTrade.tpPips?.toString() || "",
         rr: lastTrade.rr?.toString() || "",
         alignedTimeframes: lastTrade.alignedTimeframes || [],
         barrier: lastTrade.barrier || []
       });
+      setDuplicateKey(prev => prev + 1);
       handleTabChange("new-entry");
       window.scrollTo(0, 0);
     }
@@ -290,7 +298,7 @@ export default function Dashboard() {
 
         {activeTab === "new-entry" && (
           <TradeForm
-            key={duplicateTradeData ? 'duplicate' : (editingTrade ? editingTrade.id : 'new')}
+            key={duplicateTradeData ? `duplicate_${duplicateKey}` : (editingTrade ? editingTrade.id : 'new')}
             onSubmit={handleSubmitTrade}
             onDuplicate={handleDuplicate}
             editingTrade={editingTrade ? { ...editingTrade, target: editingTrade.target.toString(), stopLoss: editingTrade.stopLoss.toString(), slPips: editingTrade.slPips?.toString() || "", tpPips: editingTrade.tpPips?.toString() || "", rr: editingTrade.rr?.toString() || "", alignedTimeframes: editingTrade.alignedTimeframes || [], barrier: editingTrade.barrier || [] } : undefined}
