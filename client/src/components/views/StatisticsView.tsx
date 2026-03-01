@@ -131,24 +131,24 @@ export default function StatisticsView({ trades, initialCapital }: StatisticsVie
 
             <div className="grid lg:grid-cols-3 gap-6">
                 <DirectionBreakdown trades={filteredTrades} />
-                <Card>
+                <Card className="bg-gradient-to-br from-card to-emerald-900/10 border-emerald-500/20">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Win Rate</CardTitle>
+                        <CardTitle className="text-sm font-medium text-emerald-500/80">Win Rate</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">{stats.winRate}%</div>
+                        <div className="text-3xl font-bold font-mono text-emerald-500">{stats.winRate}%</div>
                         <p className="text-sm text-muted-foreground mt-1">{filteredTrades.filter((t) => t.result === "target").length} vincenti su {filteredTrades.length} totali</p>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className={`bg-gradient-to-br from-card ${parseFloat(stats.totalEquity) >= initialCapital ? "to-emerald-900/10 border-emerald-500/20" : "to-red-900/10 border-red-500/20"}`}>
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Risultato Finale</CardTitle>
+                        <CardTitle className={`text-sm font-medium ${parseFloat(stats.totalEquity) >= initialCapital ? "text-emerald-500/80" : "text-red-500/80"}`}>Risultato Finale</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-3xl font-bold ${parseFloat(stats.totalEquity) >= initialCapital ? "text-emerald-500" : "text-red-500"}`}>
+                        <div className={`text-3xl font-bold font-mono ${parseFloat(stats.totalEquity) >= initialCapital ? "text-emerald-500" : "text-red-500"}`}>
                             {parseFloat(stats.totalEquity) >= initialCapital ? "+" : ""}{(parseFloat(stats.totalEquity) - initialCapital).toFixed(2)} EUR
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">Equity totale: {stats.totalEquity} EUR</p>
+                        <p className="text-sm text-muted-foreground mt-1">Equity totale: <span className="font-mono">{stats.totalEquity}</span> EUR</p>
                     </CardContent>
                 </Card>
             </div>

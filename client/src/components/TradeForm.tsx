@@ -477,7 +477,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
           {/* Row B: Automated Outputs (Target, RR) - VISUALLY SEPARATED */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="target" className="text-emerald-600 font-medium transition-colors">Target (Auto)</Label>
+              <Label htmlFor="target" className="font-medium transition-colors">Target (Auto)</Label>
               <Input
                 id="target"
                 type="number"
@@ -493,7 +493,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="rr" className="text-blue-500 font-medium transition-colors">RR Matematico</Label>
+              <Label htmlFor="rr" className="font-medium transition-colors">RR Matematico</Label>
               <Input
                 id="rr"
                 type="number"
@@ -727,7 +727,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
         <div className="space-y-3">
           <Label>Screenshot / Immagini</Label>
           <div
-            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:bg-muted/50 hover:border-primary/50 transition-colors group relative"
+            className="border-2 border-dashed border-muted-foreground/50 rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:bg-muted/50 hover:border-primary transition-colors group relative"
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onDrop={(e) => {
               e.preventDefault();

@@ -65,7 +65,7 @@ export function TradeDistributionChart({ data }: { data: TradeDistributionData }
             labelStyle={{ color: "hsl(var(--foreground))" }}
             cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
           />
-          <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={40} />
+          <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={56} />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>
@@ -92,8 +92,8 @@ export function DirectionChart({ data }: { data: DirectionData }) {
             data={chartData}
             cx="50%"
             cy="50%"
-            innerRadius={60}
-            outerRadius={80}
+            innerRadius={80}
+            outerRadius={100}
             paddingAngle={2}
             dataKey="value"
           >
@@ -140,8 +140,8 @@ export function WinRateChart({ data }: { data: WinRateData }) {
               data={chartData}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={80}
+              innerRadius={80}
+              outerRadius={100}
               paddingAngle={2}
               dataKey="value"
             >
@@ -305,7 +305,7 @@ export function EmotionalFrequencyChart({ data }: { data: EmotionData[] }) {
             labelStyle={{ color: "hsl(var(--foreground))" }}
             cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
           />
-          <Bar dataKey="count" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} maxBarSize={60} />
+          <Bar dataKey="count" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} maxBarSize={56} />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>

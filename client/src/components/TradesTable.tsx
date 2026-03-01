@@ -113,7 +113,7 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
                 <TableRow
                   key={trade.id}
                   data-testid={`row-trade-${trade.id}`}
-                  className="cursor-pointer hover-elevate"
+                  className="cursor-pointer hover-elevate even:bg-muted/30"
                   onClick={() => onRowClick?.(trade)}
                 >
                   <TableCell className="font-mono text-sm">{trade.date}</TableCell>
@@ -140,9 +140,9 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
                   <TableCell>{getResultBadge(trade.result)}</TableCell>
                   <TableCell className="text-sm">{trade.emotion}</TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-1 text-[10px] uppercase font-bold text-muted-foreground">
-                      <span>{trade.alignedTimeframes.length > 0 ? trade.alignedTimeframes.join(", ") : "-"}</span>
-                      <span className="text-blue-500">{trade.barrier.length > 0 ? trade.barrier.join(", ") : "-"}</span>
+                    <div className="flex flex-col gap-1 text-[10px] uppercase font-bold text-muted-foreground max-w-[150px]" title={`TF: ${trade.alignedTimeframes.join(", ")} | Barrier: ${trade.barrier.join(", ")}`}>
+                      <span className="truncate">{trade.alignedTimeframes.length > 0 ? trade.alignedTimeframes.join(", ") : "-"}</span>
+                      <span className="text-blue-500 truncate">{trade.barrier.length > 0 ? trade.barrier.join(", ") : "-"}</span>
                     </div>
                   </TableCell>
                   <TableCell>

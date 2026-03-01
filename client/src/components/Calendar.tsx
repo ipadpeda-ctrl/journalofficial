@@ -58,8 +58,8 @@ export default function Calendar({ trades, onDayClick }: CalendarProps) {
 
   const getTradeLabel = (trade: Trade): string => {
     const pnl = trade.result === "target" ? `+${trade.target}%` :
-                trade.result === "stop_loss" ? `-${trade.stopLoss}%` :
-                trade.result === "parziale" ? `+${(trade.target * 0.5).toFixed(1)}%` : "0%";
+      trade.result === "stop_loss" ? `-${trade.stopLoss}%` :
+        trade.result === "parziale" ? `+${(trade.target * 0.5).toFixed(1)}%` : "0%";
     return `(${pnl}) ${trade.pair}`;
   };
 
@@ -86,7 +86,7 @@ export default function Calendar({ trades, onDayClick }: CalendarProps) {
           <CalendarIcon className="w-4 h-4 mr-2" />
           Weekend
         </Button>
-        
+
         <div className="flex items-center gap-4">
           <Button size="icon" variant="ghost" onClick={prevMonth} data-testid="button-prev-month">
             <ChevronLeft className="w-5 h-5" />
@@ -117,16 +117,15 @@ export default function Calendar({ trades, onDayClick }: CalendarProps) {
           <div key={weekIndex} className="grid grid-cols-7">
             {week.map((day, dayIndex) => {
               const dayTrades = day ? getTradesForDay(day) : [];
-              const isToday = day === new Date().getDate() && 
-                              month === new Date().getMonth() && 
-                              year === new Date().getFullYear();
+              const isToday = day === new Date().getDate() &&
+                month === new Date().getMonth() &&
+                year === new Date().getFullYear();
 
               return (
                 <div
                   key={dayIndex}
-                  className={`min-h-24 p-1 border-b border-r last:border-r-0 ${
-                    day ? "hover-elevate cursor-pointer" : "bg-muted/30"
-                  } ${isToday ? "bg-chart-1/10" : ""}`}
+                  className={`min-h-24 p-1 border-b border-r last:border-r-0 transition-colors ${day ? "hover-elevate hover:bg-muted/50 cursor-pointer" : "bg-muted/30"
+                    } ${isToday ? "bg-chart-1/10" : ""}`}
                   onClick={() => day && onDayClick?.(`${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`)}
                   data-testid={day ? `calendar-day-${day}` : undefined}
                 >
@@ -145,7 +144,7 @@ export default function Calendar({ trades, onDayClick }: CalendarProps) {
                           </div>
                         ))}
                         {dayTrades.length > 3 && (
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-[10px] text-muted-foreground font-medium text-center bg-muted/20 py-0.5 rounded-sm">
                             +{dayTrades.length - 3} altri
                           </div>
                         )}

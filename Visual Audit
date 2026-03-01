@@ -1,0 +1,152 @@
+# 🎨 Visual Design Audit — Trading Journal
+
+Audit completo dell'estetica e del design del sito, analizzato pagina per pagina.
+
+---
+
+## Valutazione Complessiva: **7.5 / 10**
+
+Il sito ha una base solida: il dark theme è coerente, il layout con griglia è ben strutturato, e la palette colori trading (verde/rosso) è funzionale. Tuttavia ci sono diverse aree dove un "polish" professionale farebbe la differenza tra un prodotto che *funziona* e uno che *impressiona*.
+
+---
+
+## 🟢 Punti di Forza
+
+| Aspetto | Valutazione |
+|---------|-------------|
+| **Dark mode coerente** | La palette scura (HSL 224 15%) è uniforme e non affatica gli occhi |
+| **Navbar pulita** | Header sticky con tabs ben organizzati, ha senso per la navigazione |
+| **Tabella Operazioni** | Densa e leggibile, con badge colorati per i risultati (Target/Stop/BE) |
+| **Color coding** | Verde per profitti, rosso per perdite — immediato e chiaro |
+| **Statistiche KPI** | Le 4 card gradient (Profit Factor, RR, Expectancy, Perdita) sono l'elemento visivo più forte |
+| **Font Inter** | Ottima scelta per dati e interfacce |
+
+---
+
+## 🔴 Problemi e Miglioramenti Suddivisi per Categoria
+
+### 1. 🏗️ Gerarchia Visiva e Spaziatura
+
+> [!IMPORTANT]
+> Manca una chiara gerarchia di profondità tra i livelli dell'interfaccia.
+
+- **Tutte le card hanno lo stesso livello visivo** — non c'è distinzione tra card "primarie" (KPI principali) e card "secondarie" (streak, drawdown). Servirebbero ombre o bordi diversi per creare profondità.
+- **Spaziatura inconsistente** — Lo spazio tra le sezioni nella pagina Statistiche varia: tra i KPI top e i KPI gradient c'è spazio diverso rispetto allo spazio tra Performance per Giorno e Miglior Mese.
+- **La pagina Obiettivi è troppo vuota** — Le 3 card degli obiettivi e il riepilogo mese occupano solo il 30% della viewport. Troppo spazio vuoto sotto.
+- **La pagina Diario è sbilanciata** — Il form occupa ~60% e le "Note Recenti" ~25%, con troppo spazio vuoto sotto.
+
+### 2. 🎨 Palette e Colori
+
+> [!WARNING]
+> Alcune combinazioni di colore creano problemi di leggibilità.
+
+- **Testi `muted-foreground` troppo scuri** — `hsl(220, 10%, 65%)` su background `hsl(224, 15%, 6%)` ha un contrasto di circa **4.5:1**, al limite WCAG AA. Labels e testi secondari come "Trade vincenti consecutivi" o "Rendimento / Rischio" sono difficili da leggere.
+- **Il font monospace nelle card Miglior/Peggior Mese** è un po' stridene — "**Feb 26**" e "**Mar 26**" in monospace bold crea un effetto "terminale" che non si allinea con il resto del design.
+- **Le card gradient (verde → azzurro → rosso)** nella riga KPI sono bellissime ma isolate stilisticamente — nessun'altra sezione usa gradienti, il che crea un contrasto di "lingua visiva".
+- **Il colore dei bordi delle card** è troppo sottile (`hsl(220, 15%, 16%)`) — le card si confondono con il background in condizioni di bassa luminosità.
+
+### 3. 📊 Grafici e Data Visualization
+
+- **Barre troppo larghe nei grafici** — Nei chart P&L Mensile e Win Rate Mensile, con soli 2 mesi di dati le barre diventano molto larghe. Serve un `maxBarSize` coerente (max 48-60px).
+- **La griglia punteggiata (dotted)** è un buon dettaglio ma il suo colore è quasi invisibile in dark mode.
+- **Asse Y dei grafici a barre** — I label ("+750", "+500", ecc.) usano un grigio troppo tenue.
+- **Performance per Orario** — Le barre sono compresse quando ci sono molti slot orari vuoti (06:00-12:00 tutti a 0%). Si potrebbe filtrare i range senza dati.
+- **Le mini donut chart** (40% Trade long, 60% Trade short) nella riga top sono troppo piccole per essere leggibili — i numeri percentuali dentro il cerchio si sovrappongono.
+
+### 4. 📝 Form "Nuova Operazione"
+
+````carousel
+![Nuova Operazione](C:\Users\matteop\.gemini\antigravity\brain\330d1b3c-fd3c-4e59-a244-068981e9858c\nuova_operazione_tab_1772390938509.png)
+<!-- slide -->
+**Problemi rilevati:**
+- Le label colorate (**Target (Auto)** in verde, **RR Matematico** in rosso) usano colori acidi che non hanno giustificazione semantica. Perché "Target" è verde se non è un profitto?
+- I pill tag delle Confluenze (PRO/CONTRO) sono visivamente leggeri — non si percepisce abbastanza la differenza tra "selezionato" e "non selezionato"
+- Il **dropzone per le immagini** in fondo è troppo visivamente debole — il bordo tratteggiato è quasi invisibile
+- **"Aggiungi Custom"** come pulsante a destra di un input è ridondante — potrebbe bastare un Enter
+- La sezione **TF Allineati / Barrier** ha pill toggles identici alle Confluenze sopra, questo causa confusione visiva
+````
+
+### 5. 📋 Tabella Operazioni
+
+````carousel
+![Operazioni](C:\Users\matteop\.gemini\antigravity\brain\330d1b3c-fd3c-4e59-a244-068981e9858c\operazioni_tab_screenshot_1772390947656.png)
+<!-- slide -->
+**Problemi rilevati:**
+- La colonna **TF/Bar.** è troppo densa — testo come "MENSILE, SETTIMANALE, DAILY, H4" va a capo più volte e crea righe con altezze diverse
+- La colonna **Confluenze** mostra "+3 -2" in verde/rosso, ma senza contesto è poco comprensibile. Un mini badge o tooltip sarebbe più chiaro
+- Le **icone di azione** (edit, delete) non hanno hover state evidente
+- Manca una **alternanza colore** nelle righe (zebra striping) — tutte le righe si fondono visivamente
+````
+
+### 6. 📅 Calendario
+
+````carousel
+![Calendario](C:\Users\matteop\.gemini\antigravity\brain\330d1b3c-fd3c-4e59-a244-068981e9858c\calendario_tab_screenshot_1772390955522.png)
+<!-- slide -->
+**Problemi rilevati:**
+- Le celle vuote del calendario sono **troppo grandi** e la griglia tropp domata visivamente — mancano micro-interazioni al hover
+- I badge dei trade nel giorno 1 ("-1% USDJPY") sono visivamente buoni ma il "+3 altri" è facile ignorarlo
+- Il **Recap Settimanale** sulla destra è ben strutturato ma le 3 mini-card Win/Loss/BE hanno un colore di sfondo troppo simile al background generale
+- Il **pulsante "Oggi"** è l'unico elemento azzurro prominente nella pagina — risalta correttamente
+````
+
+### 7. ⚙️ Impostazioni e altre pagine
+
+- **Settings** — La sezione "Cambia Password" usa un layout form standard che funziona, ma le tag delle Coppie/Emozioni/Confluenze potrebbero beneficiare di una maggiore differenziazione visiva tra i gruppi
+- **Admin Dashboard** — Solido, la tabella utenti è chiara. I badge "Approvato" e "Super Admin" sono ben colorati
+
+---
+
+## 🐛 Errori Tecnico-Visivi
+
+| # | Pagina | Errore | Severità |
+|---|--------|--------|----------|
+| 1 | Statistiche | Le card "Max Win Streak" / "Max Loss Streak" / "Streak Attuale" mostrano il valore in **verde** e **rosso** ma il colore non corrisponde sempre al significato (es. "3" Perdenti non dovrebbe essere rosso?) | ⚠️ Media |
+| 2 | Statistiche | La card "Perdita media" mostra "-1%" con sfondo rosso gradient — il -1% è ambiguo (è l'1% del capitale? O 1R?) | ⚠️ Media |
+| 3 | CSS Shadows | Tutte le shadow CSS (`--shadow-sm`, `--shadow-md`, ecc.) sono impostate con **opacità 0.00** — cioè sono completamente trasparenti. Le shadow sono disabilitate di fatto sia in light che in dark mode | 🔴 Alta |
+| 4 | Form | I campi **Target (Auto)** e **RR Matematico** hanno label colorate che non seguono il design system (colori inline invece dei token) | ⚠️ Media |
+| 5 | Calendario | Il testo "+3 altri" non ha un trattamento stilistico coerente con i badge sopra | 🟡 Bassa |
+
+---
+
+## 📋 Piano di Miglioramento Prioritizzato
+
+### Priorità Alta (Quick Wins)
+
+1. **Riattivare le shadow** — Rimuovere `0.00` opacity dalle CSS custom properties shadow. Usare valori reali (`0.05` light, `0.25` dark) per dare profondità alle card
+2. **Aumentare contrasto `muted-foreground`** — In dark mode portare da `hsl(220, 10%, 65%)` a `hsl(220, 10%, 72%)` per migliorare la leggibilità
+3. **Aumentare contrasto bordi card** — Da `hsl(220, 15%, 16%)` a `hsl(220, 15%, 20%)` per separare le card dal background
+4. **Zebra striping nella tabella** — Alternare `bg-muted/30` sulle righe pari per migliorare la scansione visiva
+
+### Priorità Media (Visual Polish)
+
+5. **Estendere il linguaggio gradient** — Applicare gradienti sottili agli header delle card principali (non solo i 4 KPI centrali)
+6. **Aggiungere hover states alle celle del calendario** — `bg-muted/50` al hover per feedback interattivo
+7. **Limitare `maxBarSize` nei grafici** — Max 56px su tutti i bar chart per evitare barre troppo larghe
+8. **Ridisegnare le mini donut chart** — Renderle più grandi (almeno 48→64px) o sostituirle con progress bar lineari
+9. **Colonna TF/Bar nella tabella** — Truncare con ellipsis e mostrare il contenuto completo in tooltip al hover
+10. **Migliorare il dropzone immagini** — Bordo tratteggiato più visibile, icona più grande, colore accent al hover
+
+### Priorità Bassa (Nice-to-have)
+
+11. **Micro-animazioni sulle card** — `transition: transform 0.2s` con `hover:scale-[1.01]` sulle stat card
+12. **Empty states** curati per pagine senza dati (grafici vuoti, calendario vuoto)
+13. **Loading skeleton** più eleganti con animazione shimmer
+14. **Smooth scroll** con `scroll-behavior: smooth` globale
+15. **Font monospace** — Usare solo per numeri nelle tabelle, non per i nomi dei mesi
+
+---
+
+## Screenshot di Riferimento
+
+````carousel
+![Nuova Operazione](C:\Users\matteop\.gemini\antigravity\brain\330d1b3c-fd3c-4e59-a244-068981e9858c\nuova_operazione_tab_1772390938509.png)
+<!-- slide -->
+![Operazioni](C:\Users\matteop\.gemini\antigravity\brain\330d1b3c-fd3c-4e59-a244-068981e9858c\operazioni_tab_screenshot_1772390947656.png)
+<!-- slide -->
+![Calendario](C:\Users\matteop\.gemini\antigravity\brain\330d1b3c-fd3c-4e59-a244-068981e9858c\calendario_tab_screenshot_1772390955522.png)
+<!-- slide -->
+![Statistiche Top](C:\Users\matteop\.gemini\antigravity\brain\330d1b3c-fd3c-4e59-a244-068981e9858c\statistiche_tab_top_screenshot_1772390965111.png)
+<!-- slide -->
+![Statistiche Bottom](C:\Users\matteop\.gemini\antigravity\brain\330d1b3c-fd3c-4e59-a244-068981e9858c\statistiche_tab_bottom_screenshot_1772390973101.png)
+````

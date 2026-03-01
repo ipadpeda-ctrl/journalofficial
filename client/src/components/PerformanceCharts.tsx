@@ -72,7 +72,7 @@ export function PerformanceByPair({ trades }: PerformanceByPairProps) {
             <Bar
               dataKey="pnl"
               radius={[4, 4, 0, 0]}
-              maxBarSize={60}
+              maxBarSize={56}
             >
               {chartData.map((entry, index) => (
                 <Cell
@@ -187,15 +187,15 @@ export function DirectionBreakdown({ trades }: DirectionBreakdownProps) {
   return (
     <Card className="p-4 flex items-center gap-6">
       <div className="flex items-center gap-3">
-        <div className="relative w-16 h-16">
+        <div className="relative w-20 h-20">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={[{ value: parseFloat(longPercent) }, { value: 100 - parseFloat(longPercent) }]}
                 cx="50%"
                 cy="50%"
-                innerRadius={20}
-                outerRadius={28}
+                innerRadius={28}
+                outerRadius={36}
                 dataKey="value"
                 startAngle={90}
                 endAngle={-270}
@@ -216,15 +216,15 @@ export function DirectionBreakdown({ trades }: DirectionBreakdownProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="relative w-16 h-16">
+        <div className="relative w-20 h-20">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={[{ value: parseFloat(shortPercent) }, { value: 100 - parseFloat(shortPercent) }]}
                 cx="50%"
                 cy="50%"
-                innerRadius={20}
-                outerRadius={28}
+                innerRadius={28}
+                outerRadius={36}
                 dataKey="value"
                 startAngle={90}
                 endAngle={-270}

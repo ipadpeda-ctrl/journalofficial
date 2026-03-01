@@ -112,11 +112,11 @@ export default function ConfluenceStats({ trades, type }: ConfluenceStatsProps) 
                   return labels[value] || value;
                 }}
               />
-              <Bar dataKey="target" stackId="a" fill={RESULT_COLORS.target} maxBarSize={40} />
-              <Bar dataKey="stop_loss" stackId="a" fill={RESULT_COLORS.stop_loss} maxBarSize={40} />
-              <Bar dataKey="breakeven" stackId="a" fill={RESULT_COLORS.breakeven} maxBarSize={40} />
-              <Bar dataKey="parziale" stackId="a" fill={RESULT_COLORS.parziale} maxBarSize={40} />
-              <Bar dataKey="non_fillato" stackId="a" fill={RESULT_COLORS.non_fillato} maxBarSize={40} />
+              <Bar dataKey="target" stackId="a" fill={RESULT_COLORS.target} maxBarSize={56} />
+              <Bar dataKey="stop_loss" stackId="a" fill={RESULT_COLORS.stop_loss} maxBarSize={56} />
+              <Bar dataKey="breakeven" stackId="a" fill={RESULT_COLORS.breakeven} maxBarSize={56} />
+              <Bar dataKey="parziale" stackId="a" fill={RESULT_COLORS.parziale} maxBarSize={56} />
+              <Bar dataKey="non_fillato" stackId="a" fill={RESULT_COLORS.non_fillato} maxBarSize={56} />
             </BarChart>
           </ResponsiveContainer>
         </div>

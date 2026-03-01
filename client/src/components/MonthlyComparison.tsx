@@ -111,7 +111,7 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
               <TrendingUp className="w-5 h-5 text-emerald-400" />
               <span className="text-sm text-muted-foreground">Miglior Mese</span>
             </div>
-            <p className="text-xl font-bold text-emerald-400 font-mono" data-testid="text-best-month">
+            <p className="text-xl font-bold text-emerald-400" data-testid="text-best-month">
               {bestMonth.monthLabel}
             </p>
             <p className="text-sm text-muted-foreground">
@@ -126,7 +126,7 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
               <TrendingUp className="w-5 h-5 text-red-400 rotate-180" />
               <span className="text-sm text-muted-foreground">Peggior Mese</span>
             </div>
-            <p className="text-xl font-bold text-red-400 font-mono" data-testid="text-worst-month">
+            <p className="text-xl font-bold text-red-400" data-testid="text-worst-month">
               {worstMonth.monthLabel}
             </p>
             <p className="text-sm text-muted-foreground">
@@ -197,7 +197,7 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
                     cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
                     formatter={(value: number) => [`${value >= 0 ? "+" : ""}${value.toFixed(2)} EUR`, "P&L"]}
                   />
-                  <Bar dataKey="pnl" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                  <Bar dataKey="pnl" radius={[4, 4, 0, 0]} maxBarSize={56}>
                     {monthlyData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
@@ -305,7 +305,7 @@ export default function MonthlyComparison({ trades, initialCapital = 10000 }: Mo
                     return [value, name];
                   }}
                 />
-                <Bar dataKey="winRate" fill="url(#colorWinRate)" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                <Bar dataKey="winRate" fill="url(#colorWinRate)" radius={[4, 4, 0, 0]} maxBarSize={56} />
               </BarChart>
             </ResponsiveContainer>
           </div>
