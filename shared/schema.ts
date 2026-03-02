@@ -9,6 +9,7 @@ import {
   text,
   integer,
   real,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -41,6 +42,7 @@ export const users = pgTable("users", {
   confluencesPro: text("confluences_pro").array(),
   confluencesContro: text("confluences_contro").array(),
   barrierOptions: text("barrier_options").array(),
+  isBarrierEnabled: boolean("is_barrier_enabled").default(true),
   resetToken: varchar("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -74,6 +76,7 @@ export const trades = pgTable("trades", {
   userId: varchar("user_id").notNull().references(() => users.id),
   date: varchar("date").notNull(),
   time: varchar("time"),
+  closeTime: varchar("close_time"),
   pair: varchar("pair").notNull(),
   direction: varchar("direction").notNull(), // long, short
   target: real("target"),

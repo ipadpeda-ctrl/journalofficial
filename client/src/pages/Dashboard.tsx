@@ -225,7 +225,7 @@ export default function Dashboard() {
       const lastTrade = [...trades].sort((a, b) => parseInt(b.id || "0") - parseInt(a.id || "0"))[0];
       setDuplicateTradeData({
         ...lastTrade,
-        date: new Date().toISOString().split("T")[0],
+        date: lastTrade.date, // <--- Copia la data dall'ultimo trade
         time: new Date().toTimeString().slice(0, 5),
         target: lastTrade.target?.toString() || "",
         stopLoss: lastTrade.stopLoss?.toString() || "1.00",
@@ -290,17 +290,24 @@ export default function Dashboard() {
 
         {activeTab === "calendario" && (
           <div className="flex gap-6 flex-col md:flex-row">
-            <div className="flex-1"><Calendar trades={filteredTrades} /></div>
+            <div className="flex-1">
+              <Calendar
+                trades={filteredTrades}
+                onTradeClick={handleRowClick}
+                onDayClick={(date) => {
+                  /* maybe open new trade with date? currently unhandled or just a hook */
+                }}
+              />
+            </div>
             <div className="w-full md:w-80 flex-shrink-0"><WeeklyRecap trades={filteredTrades} currentDate={selectedDate} /></div>
           </div>
         )}
 
         {activeTab === "operations" && (
-          <>
-            <TradesTable trades={filteredTrades} onEdit={handleEditTrade} onDelete={handleDeleteTrade} onRowClick={handleRowClick} />
-            <TradeDetailModal trade={selectedTrade} open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen} onEdit={handleEditTrade} onDelete={handleDeleteTrade} />
-          </>
+          <TradesTable trades={filteredTrades} onEdit={handleEditTrade} onDelete={handleDeleteTrade} onRowClick={handleRowClick} />
         )}
+
+        <TradeDetailModal trade={selectedTrade} open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen} onEdit={handleEditTrade} onDelete={handleDeleteTrade} />
 
         {activeTab === "new-entry" && (
           <TradeForm
@@ -319,6 +326,7 @@ export default function Dashboard() {
           confluencesPro={user?.confluencesPro?.length ? user.confluencesPro : defaultConfluencesPro}
           confluencesContro={user?.confluencesContro?.length ? user.confluencesContro : defaultConfluencesContro}
           barrierOptions={user?.barrierOptions?.length ? user.barrierOptions : defaultBarrierOptions}
+          isBarrierEnabled={user?.isBarrierEnabled ?? true}
           initialCapital={initialCapital}
           onSave={(settings) => console.log("Settings saved:", settings)}
         />}

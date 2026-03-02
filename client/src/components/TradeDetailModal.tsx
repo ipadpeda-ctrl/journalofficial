@@ -100,8 +100,8 @@ export default function TradeDetailModal({
                 <p className="font-mono text-sm">{trade.date}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Ora</p>
-                <p className="font-mono text-sm">{trade.time}</p>
+                <p className="text-xs text-muted-foreground">Orari</p>
+                <p className="font-mono text-sm">{trade.time}{trade.closeTime ? ` - ${trade.closeTime}` : ""}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Rischio %</p>

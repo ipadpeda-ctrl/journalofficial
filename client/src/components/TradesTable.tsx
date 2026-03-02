@@ -20,6 +20,7 @@ export interface Trade {
   id: string;
   date: string;
   time: string;
+  closeTime?: string;
   pair: string;
   direction: "long" | "short";
   target: number;
@@ -88,11 +89,11 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
           <TableHeader>
             <TableRow>
               <TableHead className="w-24">Data</TableHead>
-              <TableHead className="w-16">Ora</TableHead>
+              <TableHead className="w-20">Orari</TableHead>
               <TableHead className="w-24">Coppia</TableHead>
               <TableHead className="w-20">Dir.</TableHead>
-              <TableHead className="w-20 text-right">Target</TableHead>
-              <TableHead className="w-20 text-right">Stop</TableHead>
+              <TableHead className="w-20 text-right">Risultato</TableHead>
+              <TableHead className="w-20 text-right">Rischio</TableHead>
               <TableHead className="w-16 text-right">RR</TableHead>
               <TableHead className="w-24">Risultato</TableHead>
               <TableHead className="w-24">Emozione</TableHead>
@@ -117,7 +118,10 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
                   onClick={() => onRowClick?.(trade)}
                 >
                   <TableCell className="font-mono text-sm">{trade.date}</TableCell>
-                  <TableCell className="font-mono text-sm">{trade.time}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    <div>{trade.time || "-"}</div>
+                    {trade.closeTime && <div className="text-muted-foreground">{trade.closeTime}</div>}
+                  </TableCell>
                   <TableCell className="font-medium">{trade.pair || "-"}</TableCell>
                   <TableCell>
                     <span
@@ -212,19 +216,19 @@ export default function TradesTable({ trades, onEdit, onDelete, onRowClick }: Tr
 
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <span className="text-muted-foreground block text-xs">Data e Ora</span>
-                  <span className="font-mono">{trade.date} {trade.time}</span>
+                  <span className="text-muted-foreground block text-xs">Data e Orari</span>
+                  <span className="font-mono">{trade.date} {trade.time}{trade.closeTime ? ` - ${trade.closeTime}` : ""}</span>
                 </div>
                 <div className="text-right">
                   <span className="text-muted-foreground block text-xs">Rischio/Rendimento</span>
                   <span className="font-mono text-blue-400 font-medium">{trade.rr ? trade.rr.toFixed(2) : "-"}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-xs">Target</span>
+                  <span className="text-muted-foreground block text-xs">Risultato</span>
                   <span className="font-mono text-emerald-500">{trade.target.toFixed(2)}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-muted-foreground block text-xs">Stop Loss</span>
+                  <span className="text-muted-foreground block text-xs">Rischio</span>
                   <span className="font-mono text-red-500">{trade.stopLoss.toFixed(2)}</span>
                 </div>
               </div>

@@ -7,6 +7,7 @@ import { Trade } from "./TradesTable";
 interface CalendarProps {
   trades: Trade[];
   onDayClick?: (date: string) => void;
+  onTradeClick?: (trade: Trade) => void;
 }
 
 const DAYS = ["lun", "mar", "mer", "gio", "ven", "sab", "dom"];
@@ -15,8 +16,9 @@ const MONTHS = [
   "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
 ];
 
-export default function Calendar({ trades, onDayClick }: CalendarProps) {
+export default function Calendar({ trades, onDayClick, onTradeClick }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [showWeekends, setShowWeekends] = useState(true);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -79,10 +81,18 @@ export default function Calendar({ trades, onDayClick }: CalendarProps) {
     weeks[weeks.length - 1].push(null);
   }
 
+  const activeDays = showWeekends ? DAYS : DAYS.slice(0, 5);
+  const gridColsClass = showWeekends ? "grid-cols-7" : "grid-cols-5";
+
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between mb-4">
-        <Button variant="outline" size="sm" data-testid="button-toggle-weekend">
+        <Button
+          variant={showWeekends ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowWeekends(!showWeekends)}
+          data-testid="button-toggle-weekend"
+        >
           <CalendarIcon className="w-4 h-4 mr-2" />
           Weekend
         </Button>
@@ -105,8 +115,8 @@ export default function Calendar({ trades, onDayClick }: CalendarProps) {
       </div>
 
       <div className="border rounded-lg overflow-hidden">
-        <div className="grid grid-cols-7 bg-muted">
-          {DAYS.map((day) => (
+        <div className={`grid ${gridColsClass} bg-muted`}>
+          {activeDays.map((day) => (
             <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground border-b">
               {day}
             </div>
@@ -114,8 +124,8 @@ export default function Calendar({ trades, onDayClick }: CalendarProps) {
         </div>
 
         {weeks.map((week, weekIndex) => (
-          <div key={weekIndex} className="grid grid-cols-7">
-            {week.map((day, dayIndex) => {
+          <div key={weekIndex} className={`grid ${gridColsClass}`}>
+            {week.slice(0, showWeekends ? 7 : 5).map((day, dayIndex) => {
               const dayTrades = day ? getTradesForDay(day) : [];
               const isToday = day === new Date().getDate() &&
                 month === new Date().getMonth() &&
@@ -138,7 +148,11 @@ export default function Calendar({ trades, onDayClick }: CalendarProps) {
                         {dayTrades.slice(0, 3).map((trade) => (
                           <div
                             key={trade.id}
-                            className={`text-xs px-1 py-0.5 rounded truncate ${getTradeColor(trade)}`}
+                            className={`text-xs px-1 py-0.5 rounded truncate cursor-pointer hover:brightness-110 ${getTradeColor(trade)}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onTradeClick?.(trade);
+                            }}
                           >
                             {getTradeLabel(trade)}
                           </div>

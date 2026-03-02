@@ -25,6 +25,7 @@ interface CustomUser {
   confluencesPro?: string[] | null;
   confluencesContro?: string[] | null;
   barrierOptions?: string[] | null;
+  isBarrierEnabled?: boolean | null;
 }
 
 // Default values as fallback if user has no custom settings
@@ -48,6 +49,7 @@ export type TradeResult = "target" | "stop_loss" | "breakeven" | "parziale" | "n
 export interface TradeFormData {
   date: string;
   time: string;
+  closeTime?: string;
   pair: string;
   direction: "long" | "short";
   target: string;
@@ -68,10 +70,11 @@ export interface TradeFormData {
 export const tradeFormSchema = z.object({
   date: z.string().min(1, "Data richiesta"),
   time: z.string().min(1, "Ora richiesta"),
+  closeTime: z.string().optional(),
   pair: z.string().min(1, "Coppia richiesta"),
   direction: z.enum(["long", "short"]),
-  target: z.string().min(1, "Target richiesto"),
-  stopLoss: z.string().min(1, "Stop loss richiesto"),
+  target: z.string().min(1, "Risultato richiesto"),
+  stopLoss: z.string().min(1, "Rischio richiesto"),
   slPips: z.string().optional(),
   tpPips: z.string().optional(),
   rr: z.string().optional(),
@@ -102,6 +105,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
     defaultValues: editingTrade ? {
       date: editingTrade.date,
       time: editingTrade.time,
+      closeTime: editingTrade.closeTime || "",
       pair: editingTrade.pair,
       direction: editingTrade.direction,
       target: editingTrade.target,
@@ -121,6 +125,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
       // Default per la duplicazione
       date: initialData.date || new Date().toISOString().split("T")[0],
       time: initialData.time || new Date().toTimeString().slice(0, 5),
+      closeTime: initialData.closeTime || "",
       pair: initialData.pair || "",
       direction: initialData.direction || "long",
       target: initialData.target || "",
@@ -139,6 +144,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
     } : {
       date: new Date().toISOString().split("T")[0],
       time: new Date().toTimeString().slice(0, 5),
+      closeTime: "",
       pair: "",
       direction: "long",
       target: "",
@@ -175,6 +181,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
     if (editingTrade) {
       form.reset({
         ...editingTrade,
+        closeTime: editingTrade.closeTime || "",
         slPips: editingTrade.slPips || "",
         tpPips: editingTrade.tpPips || "",
         rr: editingTrade.rr || "",
@@ -190,6 +197,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
       form.reset({
         date: initialData.date || new Date().toISOString().split("T")[0],
         time: initialData.time || new Date().toTimeString().slice(0, 5),
+        closeTime: initialData.closeTime || "",
         pair: initialData.pair || "",
         direction: initialData.direction || "long",
         target: initialData.target || "",
@@ -210,6 +218,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
       form.reset({
         date: new Date().toISOString().split("T")[0],
         time: new Date().toTimeString().slice(0, 5),
+        closeTime: "",
         pair: "",
         direction: "long",
         target: "",
@@ -373,6 +382,16 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="closeTime">Ora chiusura trade</Label>
+            <Input
+              id="closeTime"
+              type="time"
+              {...form.register("closeTime")}
+              data-testid="input-close-time"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="pair">Coppia</Label>
             <Controller
               name="pair"
@@ -427,7 +446,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
           {/* Row A: Manual Inputs (Risk, Pips) */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="stopLoss">Rischio (€/$)</Label>
+              <Label htmlFor="stopLoss">Rischio (%)</Label>
               <Input
                 id="stopLoss"
                 type="number"
@@ -477,7 +496,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
           {/* Row B: Automated Outputs (Target, RR) - VISUALLY SEPARATED */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="target" className="font-medium transition-colors">Target (Auto)</Label>
+              <Label htmlFor="target" className="font-medium transition-colors">Risultato (%)</Label>
               <Input
                 id="target"
                 type="number"
@@ -528,7 +547,15 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
                         : "bg-yellow-600 hover:bg-yellow-700 shadow-md text-white"
                     : "hover:bg-muted"
                     }`}
-                  onClick={() => setValue("result", result)}
+                  onClick={() => {
+                    setValue("result", result);
+                    if (result === "stop_loss") {
+                      const riskVal = parseFloat(currentRisk) || 0;
+                      setValue("target", (-riskVal).toString());
+                    } else if (result === "breakeven") {
+                      setValue("target", "0");
+                    }
+                  }}
                   data-testid={`button-result-${result}`}
                 >
                   {result === "target" ? "Target" : result === "stop_loss" ? "Stop" : "BE"}
@@ -661,7 +688,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
         </div>
 
         {/* ALIGNED TIMEFRAMES & BARRIER */}
-        <div className="grid md:grid-cols-2 gap-6 bg-muted/10 p-4 rounded-lg border border-border/40">
+        <div className={`grid gap-6 bg-muted/10 p-4 rounded-lg border border-border/40 ${customUser?.isBarrierEnabled !== false ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
           <div className="space-y-3">
             <Label className="text-cyan-400 font-semibold text-sm">TF. Allineati (Macro)</Label>
             <div className="flex flex-wrap gap-2">
@@ -687,30 +714,32 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
             </p>
           </div>
 
-          <div className="space-y-3">
-            <Label className="text-cyan-400 font-semibold text-sm">Barrier (Microstrutture confermate)</Label>
-            <div className="flex flex-wrap gap-2">
-              {availableBarrierOptions.map((b: string) => {
-                const isSelected = barrier.includes(b);
-                return (
-                  <Badge
-                    key={b}
-                    variant={isSelected ? "default" : "outline"}
-                    className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
-                      ? "bg-cyan-600 hover:bg-cyan-700 shadow-sm text-white border-cyan-500"
-                      : "hover:bg-cyan-500/10 hover:border-cyan-500/50 text-foreground"
-                      }`}
-                    onClick={() => toggleBarrier(b)}
-                  >
-                    {b}
-                  </Badge>
-                );
-              })}
+          {customUser?.isBarrierEnabled !== false && (
+            <div className="space-y-3">
+              <Label className="text-cyan-400 font-semibold text-sm">Barrier (Microstrutture confermate)</Label>
+              <div className="flex flex-wrap gap-2">
+                {availableBarrierOptions.map((b: string) => {
+                  const isSelected = barrier.includes(b);
+                  return (
+                    <Badge
+                      key={b}
+                      variant={isSelected ? "default" : "outline"}
+                      className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
+                        ? "bg-cyan-600 hover:bg-cyan-700 shadow-sm text-white border-cyan-500"
+                        : "hover:bg-cyan-500/10 hover:border-cyan-500/50 text-foreground"
+                        }`}
+                      onClick={() => toggleBarrier(b)}
+                    >
+                      {b}
+                    </Badge>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground font-medium mt-2">
+                Quali micro-strutture hanno confermato l'ingresso a mercato?
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground font-medium mt-2">
-              Quali micro-strutture hanno confermato l'ingresso a mercato?
-            </p>
-          </div>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -736,12 +765,29 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
               const url = e.dataTransfer.getData('text');
               if (url) addImageUrl(url);
             }}
+            tabIndex={0}
+            onPaste={async (e) => {
+              const items = e.clipboardData.items;
+              for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf("image") !== -1) {
+                  const file = items[i].getAsFile();
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const result = event.target?.result as string;
+                      if (result) addImageUrl(result);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }
+              }
+            }}
           >
-            <div className="bg-muted p-3 rounded-full group-hover:bg-primary/10 transition-colors">
+            <div className="bg-muted p-3 rounded-full group-hover:bg-primary/10 transition-colors pointer-events-none">
               <Upload className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
-            <div className="text-center">
-              <p className="text-sm font-medium text-muted-foreground">Trascina qui l'URL dell'immagine</p>
+            <div className="text-center pointer-events-none">
+              <p className="text-sm font-medium text-muted-foreground">Clicca qui e incolla (Ctrl+V) o trascina URL</p>
               <p className="text-xs text-muted-foreground mt-1">oppure incollalo nel campo sottostante</p>
             </div>
             <div className="flex gap-2 w-full mt-2 max-w-sm relative z-10">

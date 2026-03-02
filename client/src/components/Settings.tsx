@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, Save, Wallet, Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, X, Save, Wallet, Loader2, Pencil, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ChangePassword from "@/components/ChangePassword";
 
@@ -16,6 +17,7 @@ interface SettingsProps {
   confluencesPro: string[];
   confluencesContro: string[];
   barrierOptions?: string[];
+  isBarrierEnabled?: boolean;
   initialCapital?: number;
   onSave?: (settings: SettingsData) => void;
 }
@@ -26,6 +28,7 @@ export interface SettingsData {
   confluencesPro: string[];
   confluencesContro: string[];
   barrierOptions?: string[];
+  isBarrierEnabled?: boolean;
 }
 
 export default function Settings({
@@ -34,6 +37,7 @@ export default function Settings({
   confluencesPro: initialConfluencesPro,
   confluencesContro: initialConfluencesContro,
   barrierOptions: initialBarrierOptions = ["m15", "m10", "m5", "m1"],
+  isBarrierEnabled: initialIsBarrierEnabled = true,
   initialCapital = 10000,
   onSave,
 }: SettingsProps) {
@@ -43,6 +47,7 @@ export default function Settings({
   const [confluencesPro, setConfluencesPro] = useState(initialConfluencesPro);
   const [confluencesContro, setConfluencesContro] = useState(initialConfluencesContro);
   const [barrierOptions, setBarrierOptions] = useState(initialBarrierOptions);
+  const [isBarrierEnabled, setIsBarrierEnabled] = useState(initialIsBarrierEnabled);
   const [capital, setCapital] = useState(initialCapital);
 
   useEffect(() => {
@@ -56,13 +61,17 @@ export default function Settings({
     setConfluencesPro(initialConfluencesPro);
     setConfluencesContro(initialConfluencesContro);
     setBarrierOptions(initialBarrierOptions);
-  }, [initialPairs, initialEmotions, initialConfluencesPro, initialConfluencesContro, initialBarrierOptions]);
+    setIsBarrierEnabled(initialIsBarrierEnabled);
+  }, [initialPairs, initialEmotions, initialConfluencesPro, initialConfluencesContro, initialBarrierOptions, initialIsBarrierEnabled]);
 
   const [newPair, setNewPair] = useState("");
   const [newEmotion, setNewEmotion] = useState("");
   const [newProConfluence, setNewProConfluence] = useState("");
   const [newControConfluence, setNewControConfluence] = useState("");
   const [newBarrier, setNewBarrier] = useState("");
+
+  const [editingConfluence, setEditingConfluence] = useState<{ type: "pro" | "contro", index: number } | null>(null);
+  const [editingValue, setEditingValue] = useState("");
 
   const updateCapitalMutation = useMutation({
     mutationFn: async (newCapital: number) => {
@@ -112,8 +121,27 @@ export default function Settings({
     setter((prev) => prev.filter((item) => item !== value));
   };
 
+  const saveEdit = () => {
+    if (!editingConfluence || !editingValue.trim()) return;
+
+    if (editingConfluence.type === "pro") {
+      setConfluencesPro((prev) => {
+        const next = [...prev];
+        next[editingConfluence.index] = editingValue.trim();
+        return next;
+      });
+    } else {
+      setConfluencesContro((prev) => {
+        const next = [...prev];
+        next[editingConfluence.index] = editingValue.trim();
+        return next;
+      });
+    }
+    setEditingConfluence(null);
+  };
+
   const handleSave = () => {
-    const settingsData = { pairs, emotions, confluencesPro, confluencesContro, barrierOptions };
+    const settingsData = { pairs, emotions, confluencesPro, confluencesContro, barrierOptions, isBarrierEnabled };
     // Salvataggio tramite API
     updateSettingsMutation.mutate(settingsData);
     // Callback opzionale per il genitore
@@ -229,18 +257,48 @@ export default function Settings({
         <Card className="p-6">
           <h2 className="text-lg font-medium mb-4">Confluenze PRO</h2>
           <div className="flex flex-wrap gap-2 mb-4">
-            {confluencesPro.map((conf) => (
-              <Badge
-                key={conf}
-                variant="secondary"
-                className="gap-1 bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                data-testid={`badge-pro-${conf}`}
-              >
-                {conf}
-                <button onClick={() => removeItem(setConfluencesPro, conf)} className="hover:opacity-70">
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
+            {confluencesPro.map((conf, idx) => (
+              editingConfluence?.type === "pro" && editingConfluence.index === idx ? (
+                <div key={idx} className="flex items-center gap-1 border border-emerald-500/30 bg-emerald-500/10 rounded-full px-2 py-0.5">
+                  <input
+                    autoFocus
+                    className="bg-transparent border-none outline-none text-xs text-emerald-400 w-24"
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEdit();
+                      if (e.key === "Escape") setEditingConfluence(null);
+                    }}
+                  />
+                  <button onClick={saveEdit} className="text-emerald-500 hover:text-emerald-400">
+                    <Check className="w-3 h-3" />
+                  </button>
+                  <button onClick={() => setEditingConfluence(null)} className="text-emerald-500 hover:text-emerald-400">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <Badge
+                  key={conf}
+                  variant="secondary"
+                  className="gap-1 bg-emerald-500/20 text-emerald-400 border-emerald-500/30 group"
+                  data-testid={`badge-pro-${conf}`}
+                >
+                  {conf}
+                  <button
+                    onClick={() => {
+                      setEditingConfluence({ type: "pro", index: idx });
+                      setEditingValue(conf);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity hover:opacity-70 ml-1 text-emerald-500"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                  <button onClick={() => removeItem(setConfluencesPro, conf)} className="hover:opacity-70 text-emerald-500">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )
             ))}
           </div>
           <div className="flex gap-2">
@@ -268,18 +326,48 @@ export default function Settings({
         <Card className="p-6">
           <h2 className="text-lg font-medium mb-4">Confluenze CONTRO</h2>
           <div className="flex flex-wrap gap-2 mb-4">
-            {confluencesContro.map((conf) => (
-              <Badge
-                key={conf}
-                variant="secondary"
-                className="gap-1 bg-red-500/20 text-red-400 border-red-500/30"
-                data-testid={`badge-contro-${conf}`}
-              >
-                {conf}
-                <button onClick={() => removeItem(setConfluencesContro, conf)} className="hover:opacity-70">
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
+            {confluencesContro.map((conf, idx) => (
+              editingConfluence?.type === "contro" && editingConfluence.index === idx ? (
+                <div key={idx} className="flex items-center gap-1 border border-red-500/30 bg-red-500/10 rounded-full px-2 py-0.5">
+                  <input
+                    autoFocus
+                    className="bg-transparent border-none outline-none text-xs text-red-400 w-24"
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEdit();
+                      if (e.key === "Escape") setEditingConfluence(null);
+                    }}
+                  />
+                  <button onClick={saveEdit} className="text-red-500 hover:text-red-400">
+                    <Check className="w-3 h-3" />
+                  </button>
+                  <button onClick={() => setEditingConfluence(null)} className="text-red-500 hover:text-red-400">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <Badge
+                  key={conf}
+                  variant="secondary"
+                  className="gap-1 bg-red-500/20 text-red-400 border-red-500/30 group"
+                  data-testid={`badge-contro-${conf}`}
+                >
+                  {conf}
+                  <button
+                    onClick={() => {
+                      setEditingConfluence({ type: "contro", index: idx });
+                      setEditingValue(conf);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity hover:opacity-70 ml-1 text-red-500"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                  <button onClick={() => removeItem(setConfluencesContro, conf)} className="hover:opacity-70 text-red-500">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )
             ))}
           </div>
           <div className="flex gap-2">
@@ -306,7 +394,17 @@ export default function Settings({
       </div>
 
       <Card className="p-6">
-        <h2 className="text-lg font-medium mb-4">Barrier (Microstrutture/Conferme)</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium">Barrier (Microstrutture/Conferme)</h2>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="barrier-toggle" className="text-sm text-muted-foreground mr-2">Abilita barrier nei trade form</Label>
+            <Switch
+              id="barrier-toggle"
+              checked={isBarrierEnabled}
+              onCheckedChange={setIsBarrierEnabled}
+            />
+          </div>
+        </div>
         <p className="text-sm text-muted-foreground mb-4">
           Aggiungi le conferme di time-frame inferiori che cerchi per convalidare il setup (es. m5, m15).
         </p>
