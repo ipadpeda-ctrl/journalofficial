@@ -649,54 +649,54 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
               </Button>
             </div>
           </div>
-        </div>
 
-        <div className="space-y-3">
-          <Label className="text-red-500 font-semibold text-sm">Confluenze CONTRO</Label>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {availableConfluencesContro.map((tag: string) => {
-              const isSelected = confluencesContro.includes(tag);
-              return (
-                <Badge
+          <div className="space-y-3">
+            <Label className="text-red-500 font-semibold text-sm">Confluenze CONTRO</Label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {availableConfluencesContro.map((tag: string) => {
+                const isSelected = confluencesContro.includes(tag);
+                return (
+                  <Badge
+                    key={tag}
+                    variant={isSelected ? "default" : "outline"}
+                    className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
+                      ? "bg-red-500 hover:bg-red-600 shadow-sm text-white"
+                      : "hover:border-red-500/50 hover:bg-red-500/10 text-foreground"
+                      }`}
+                    onClick={() => isSelected ? removeConfluence("contro", tag) : addConfluence("contro", tag)}
+                  >
+                    {tag}
+                  </Badge>
+                );
+              })}
+              {/* Render custom tags that are not in the default/available list */}
+              {confluencesContro.filter((tag) => !availableConfluencesContro.includes(tag)).map((tag) => (
+                <ConfluenceTag
                   key={tag}
-                  variant={isSelected ? "default" : "outline"}
-                  className={`cursor-pointer transition-all duration-200 active:scale-95 px-3 py-1 ${isSelected
-                    ? "bg-red-500 hover:bg-red-600 shadow-sm text-white"
-                    : "hover:border-red-500/50 hover:bg-red-500/10 text-foreground"
-                    }`}
-                  onClick={() => isSelected ? removeConfluence("contro", tag) : addConfluence("contro", tag)}
-                >
-                  {tag}
-                </Badge>
-              );
-            })}
-            {/* Render custom tags that are not in the default/available list */}
-            {confluencesContro.filter((tag) => !availableConfluencesContro.includes(tag)).map((tag) => (
-              <ConfluenceTag
-                key={tag}
-                label={tag}
-                type="contro"
-                onRemove={() => removeConfluence("contro", tag)}
+                  label={tag}
+                  type="contro"
+                  onRemove={() => removeConfluence("contro", tag)}
+                />
+              ))}
+            </div>
+            <div className="flex gap-2 items-center">
+              <Plus className="w-4 h-4 text-muted-foreground mr-1" />
+              <Input
+                placeholder="Custom..."
+                value={newControTag}
+                onChange={(e) => setNewControTag(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence("contro", newControTag))}
+                className="w-28"
               />
-            ))}
-          </div>
-          <div className="flex gap-2 items-center">
-            <Plus className="w-4 h-4 text-muted-foreground mr-1" />
-            <Input
-              placeholder="Custom..."
-              value={newControTag}
-              onChange={(e) => setNewControTag(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence("contro", newControTag))}
-              className="w-28"
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => addConfluence("contro", newControTag)}
-            >
-              Aggiungi Custom
-            </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => addConfluence("contro", newControTag)}
+              >
+                Aggiungi Custom
+              </Button>
+            </div>
           </div>
         </div>
 
