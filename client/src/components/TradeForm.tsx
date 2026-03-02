@@ -36,6 +36,8 @@ const DEFAULT_CONFLUENCES_CONTRO = ["Notizie in arrivo", "Pattern debole", "Cont
 const DEFAULT_BARRIER_OPTIONS = ["m15", "m10", "m5", "m1"];
 const FIXED_ALIGNED_TIMEFRAMES = ["Mensile", "Settimanale", "Daily", "H4", "H1", "M30"];
 
+const FALLBACK_IMAGE_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='80' viewBox='0 0 128 80'%3E%3Crect fill='%23f1f5f9' width='128' height='80'/%3E%3Ctext fill='%2394a3b8' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='12' font-family='sans-serif'%3ENo Preview%3C/text%3E%3C/svg%3E";
+
 interface TradeFormProps {
   onSubmit?: (trade: TradeFormData) => void;
   onDuplicate?: () => void;
@@ -748,8 +750,8 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
             id="notes"
             placeholder="Analisi pre e post trade..."
             {...form.register("notes")}
-            className="resize-none"
-            rows={2}
+            className="resize-y min-h-[100px]"
+            rows={4}
           />
         </div>
 
@@ -821,7 +823,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
                     alt={`Screenshot ${index + 1}`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='80' viewBox='0 0 128 80'%3E%3Crect fill='%23f1f5f9' width='128' height='80'/%3E%3Ctext fill='%2394a3b8' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='12' font-family='sans-serif'%3ENo Preview%3C/text%3E%3C/svg%3E";
+                      (e.target as HTMLImageElement).src = FALLBACK_IMAGE_SVG;
                     }}
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">

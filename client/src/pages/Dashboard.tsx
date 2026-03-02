@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import Header, { Tab } from "@/components/Header";
 import StatCard from "@/components/StatCard";
 import TradeForm, { TradeFormData } from "@/components/TradeForm";
@@ -80,6 +81,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const initialCapital = user?.initialCapital ?? 10000;
   const [location, setLocation] = useLocation();
+  const { toast } = useToast();
 
   // --- LOGICA DI NAVIGAZIONE PULITA ---
   const getTabFromPath = (path: string): Tab => {
@@ -204,10 +206,16 @@ export default function Dashboard() {
 
   const handleSubmitTrade = (formData: TradeFormData) => {
     if (editingTrade) {
-      updateTradeMutation.mutate({ id: editingTrade.id, data: formData }, { onSuccess: () => { setEditingTrade(null); handleTabChange("operations"); } });
+      updateTradeMutation.mutate({ id: editingTrade.id, data: formData }, {
+        onSuccess: () => {
+          toast({ title: "Operazione salvata", description: "Il tuo trade è stato aggiornato con successo." });
+          setEditingTrade(null); handleTabChange("operations");
+        }
+      });
     } else {
       createTradeMutation.mutate(formData, {
         onSuccess: () => {
+          toast({ title: "Operazione salvata", description: "Il tuo trade è stato inserito con successo." });
           setDuplicateTradeData(null);
           setSubmitKey(prev => prev + 1);
           window.scrollTo({ top: 0, behavior: "smooth" });
