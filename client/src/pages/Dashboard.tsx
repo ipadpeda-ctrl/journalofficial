@@ -224,7 +224,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleEditTrade = (trade: Trade) => { setEditingTrade(trade); setIsDetailModalOpen(false); handleTabChange("new-entry"); };
+  const handleEditTrade = (trade: Trade) => { setDuplicateTradeData(null); setEditingTrade(trade); setIsDetailModalOpen(false); setActiveTab("new-entry"); window.history.replaceState(null, "", "/"); };
   const handleCancelEdit = () => { setEditingTrade(null); setDuplicateTradeData(null); };
   const handleRowClick = (trade: Trade) => { setSelectedTrade(trade); setIsDetailModalOpen(true); };
   const handleDeleteTrade = (id: string) => { deleteTradeMutation.mutate(id); if (editingTrade?.id === id) setEditingTrade(null); };
