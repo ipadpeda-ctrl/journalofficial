@@ -534,35 +534,46 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="space-y-2 col-span-2 md:col-span-2">
             <Label>Risultato</Label>
-            <div className="flex gap-1">
-              {(["target", "stop_loss", "breakeven"] as const).map((result) => (
-                <Button
-                  key={result}
-                  type="button"
-                  variant={resultVal === result ? "default" : "outline"}
-                  size="sm"
-                  className={`flex-1 transition-all duration-200 active:scale-95 ${resultVal === result
-                    ? result === "target"
-                      ? "bg-emerald-600 hover:bg-emerald-700 shadow-md text-white"
-                      : result === "stop_loss"
-                        ? "bg-red-600 hover:bg-red-700 shadow-md text-white"
-                        : "bg-yellow-600 hover:bg-yellow-700 shadow-md text-white"
-                    : "hover:bg-muted"
-                    }`}
-                  onClick={() => {
-                    setValue("result", result);
-                    if (result === "stop_loss") {
-                      const riskVal = parseFloat(currentRisk) || 0;
-                      setValue("target", (-riskVal).toString());
-                    } else if (result === "breakeven") {
-                      setValue("target", "0");
-                    }
-                  }}
-                  data-testid={`button-result-${result}`}
-                >
-                  {result === "target" ? "Target" : result === "stop_loss" ? "Stop" : "BE"}
-                </Button>
-              ))}
+            <div className="flex flex-wrap gap-1">
+              {(["target", "stop_loss", "breakeven", "parziale", "non_fillato"] as const).map((result) => {
+                const isSelected = resultVal === result;
+                let bgClass = "hover:bg-muted";
+                if (isSelected) {
+                  if (result === "target") bgClass = "bg-emerald-600 hover:bg-emerald-700 shadow-md text-white";
+                  else if (result === "stop_loss") bgClass = "bg-red-600 hover:bg-red-700 shadow-md text-white";
+                  else if (result === "breakeven") bgClass = "bg-yellow-600 hover:bg-yellow-700 shadow-md text-white";
+                  else if (result === "parziale") bgClass = "bg-blue-600 hover:bg-blue-700 shadow-md text-white";
+                  else if (result === "non_fillato") bgClass = "bg-gray-500 hover:bg-gray-600 shadow-md text-white";
+                }
+
+                let label = "BE";
+                if (result === "target") label = "Target";
+                else if (result === "stop_loss") label = "Stop";
+                else if (result === "parziale") label = "Parziale";
+                else if (result === "non_fillato") label = "Non Fillato";
+
+                return (
+                  <Button
+                    key={result}
+                    type="button"
+                    variant={isSelected ? "default" : "outline"}
+                    size="sm"
+                    className={`flex-1 transition-all duration-200 active:scale-95 ${bgClass}`}
+                    onClick={() => {
+                      setValue("result", result);
+                      if (result === "stop_loss") {
+                        const riskVal = parseFloat(currentRisk) || 0;
+                        setValue("target", (-riskVal).toString());
+                      } else if (result === "breakeven" || result === "non_fillato") {
+                        setValue("target", "0");
+                      }
+                    }}
+                    data-testid={`button-result-${result}`}
+                  >
+                    {label}
+                  </Button>
+                );
+              })}
             </div>
           </div>
 
