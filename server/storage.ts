@@ -26,7 +26,7 @@ export interface IStorage {
   updateUserRole(id: string, role: string): Promise<User | undefined>;
   updateUserApproval(id: string, isApproved: string): Promise<User | undefined>;
   updateUserCapital(id: string, capital: number): Promise<User | undefined>;
-  updateUserSettings(id: string, settings: { pairs?: string[], emotions?: string[], confluencesPro?: string[], confluencesContro?: string[], barrierOptions?: string[] }): Promise<User | undefined>;
+  updateUserSettings(id: string, settings: { pairs?: string[], emotions?: string[], confluencesPro?: string[], confluencesContro?: string[], barrierOptions?: string[], isBarrierEnabled?: boolean }): Promise<User | undefined>;
   updateUserPassword(id: string, passwordHash: string): Promise<User | undefined>;
   setResetToken(id: string, token: string, expiry: Date): Promise<User | undefined>;
   clearResetToken(id: string): Promise<User | undefined>;
@@ -132,7 +132,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUserSettings(id: string, settings: { pairs?: string[], emotions?: string[], confluencesPro?: string[], confluencesContro?: string[], barrierOptions?: string[] }): Promise<User | undefined> {
+  async updateUserSettings(id: string, settings: { pairs?: string[], emotions?: string[], confluencesPro?: string[], confluencesContro?: string[], barrierOptions?: string[], isBarrierEnabled?: boolean }): Promise<User | undefined> {
     const [user] = await db
       .update(users)
       .set({ ...settings, updatedAt: new Date() })

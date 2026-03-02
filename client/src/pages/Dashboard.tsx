@@ -37,6 +37,7 @@ function mapSchemaTradeToTrade(t: SchemaTrade): Trade {
     id: t.id.toString(),
     date: t.date,
     time: t.time || "",
+    closeTime: t.closeTime || undefined,
     pair: t.pair,
     direction: t.direction as "long" | "short",
     target: t.target || 0,
