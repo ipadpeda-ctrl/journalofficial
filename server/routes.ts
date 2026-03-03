@@ -591,10 +591,9 @@ export async function registerRoutes(
       const emailSent = await sendAdminResetPasswordEmail(targetUser.email, tempPassword, baseUrl);
 
       if (emailSent) {
-        res.json({ message: "Password resettata e inviata via email all'utente." });
+        res.json({ message: `Password resettata: ${tempPassword} — Email di notifica inviata all'utente.` });
       } else {
-        // Fallback: return password in response (only visible to admin)
-        res.json({ message: `Password resettata. Nuova password temporanea: ${tempPassword} — Comunicala all'utente in modo sicuro.` });
+        res.json({ message: `Password resettata: ${tempPassword} — Comunicala all'utente in modo sicuro (email non configurata).` });
       }
     } catch (error) {
       console.error("Error resetting user password:", error);
