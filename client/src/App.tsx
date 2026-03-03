@@ -60,6 +60,7 @@ function Router() {
       {/* 3. Redirect e 404 */}
       <Route path="/login"><Redirect to="/" /></Route>
       <Route path="/register"><Redirect to="/" /></Route>
+      <Route path="/landing"><Redirect to="/" /></Route>
       <Route component={NotFound} />
     </Switch>
   );
