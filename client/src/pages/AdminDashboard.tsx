@@ -108,6 +108,63 @@ export default function AdminDashboard() {
 
   const isLoading = authLoading || (isAdmin && (usersLoading || tradesLoading));
 
+  // Move all hooks and derived data BEFORE early returns to avoid React error #310
+  const safeUsers = Array.isArray(users) ? users : [];
+  const safeTrades = Array.isArray(trades) ? trades : [];
+
+  // Filter Logic
+  const filteredTrades = safeTrades.filter(t => filterUserId === "all" || t.userId === filterUserId);
+
+  // Pre-compute stats map in a single O(N) pass instead of per-user O(N) (#15)
+  const userStatsMap = useMemo(() => {
+    const map = new Map<string, { totalTrades: number; wins: number; losses: number; winRate: number; pnl: number }>();
+    for (const t of safeTrades) {
+      let entry = map.get(t.userId);
+      if (!entry) {
+        entry = { totalTrades: 0, wins: 0, losses: 0, winRate: 0, pnl: 0 };
+        map.set(t.userId, entry);
+      }
+      entry.totalTrades++;
+      if (t.result === "target") entry.wins++;
+      if (t.result === "stop_loss") entry.losses++;
+      entry.pnl += t.pnl || 0;
+    }
+    Array.from(map.values()).forEach(entry => {
+      entry.winRate = entry.totalTrades > 0 ? (entry.wins / entry.totalTrades) * 100 : 0;
+    });
+    return map;
+  }, [safeTrades]);
+
+  const defaultStats = { totalTrades: 0, wins: 0, losses: 0, winRate: 0, pnl: 0 };
+  const getUserStats = (userId: string) => userStatsMap.get(userId) || defaultStats;
+
+  const leaderboardByWinRate = useMemo(() => safeUsers
+    .map((u) => ({ ...u, stats: getUserStats(u.id) }))
+    .filter((u) => u.stats.totalTrades >= 1)
+    .sort((a, b) => b.stats.winRate - a.stats.winRate)
+    .slice(0, 10), [safeUsers, userStatsMap]);
+
+  const userTradesChartData = useMemo(() => safeUsers
+    .map((u) => {
+      const stats = getUserStats(u.id);
+      return {
+        name: u.firstName || u.email?.split("@")[0] || "User",
+        trades: stats.totalTrades,
+        winRate: Math.round(stats.winRate),
+      };
+    })
+    .filter((u) => u.trades > 0)
+    .sort((a, b) => b.trades - a.trades)
+    .slice(0, 8), [safeUsers, userStatsMap]);
+
+  const totalStats = useMemo(() => ({
+    totalUsers: safeUsers.length,
+    totalTrades: safeTrades.length,
+    avgWinRate: safeUsers.length > 0 ? safeUsers.reduce((sum, u) => sum + getUserStats(u.id).winRate, 0) / safeUsers.length : 0,
+    totalWins: safeTrades.filter((t) => t.result === "target").length,
+    totalLosses: safeTrades.filter((t) => t.result === "stop_loss").length,
+  }), [safeUsers, safeTrades, userStatsMap]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -158,62 +215,6 @@ export default function AdminDashboard() {
     );
   }
 
-  const safeUsers = Array.isArray(users) ? users : [];
-  const safeTrades = Array.isArray(trades) ? trades : [];
-
-  // Filter Logic
-  const filteredTrades = safeTrades.filter(t => filterUserId === "all" || t.userId === filterUserId);
-
-  // Pre-compute stats map in a single O(N) pass instead of per-user O(N) (#15)
-  const userStatsMap = useMemo(() => {
-    const map = new Map<string, { totalTrades: number; wins: number; losses: number; winRate: number; pnl: number }>();
-    for (const t of safeTrades) {
-      let entry = map.get(t.userId);
-      if (!entry) {
-        entry = { totalTrades: 0, wins: 0, losses: 0, winRate: 0, pnl: 0 };
-        map.set(t.userId, entry);
-      }
-      entry.totalTrades++;
-      if (t.result === "target") entry.wins++;
-      if (t.result === "stop_loss") entry.losses++;
-      entry.pnl += t.pnl || 0;
-    }
-    // Compute winRate after accumulation
-    Array.from(map.values()).forEach(entry => {
-      entry.winRate = entry.totalTrades > 0 ? (entry.wins / entry.totalTrades) * 100 : 0;
-    });
-    return map;
-  }, [safeTrades]);
-
-  const defaultStats = { totalTrades: 0, wins: 0, losses: 0, winRate: 0, pnl: 0 };
-  const getUserStats = (userId: string) => userStatsMap.get(userId) || defaultStats;
-
-  const leaderboardByWinRate = useMemo(() => safeUsers
-    .map((u) => ({ ...u, stats: getUserStats(u.id) }))
-    .filter((u) => u.stats.totalTrades >= 1)
-    .sort((a, b) => b.stats.winRate - a.stats.winRate)
-    .slice(0, 10), [safeUsers, userStatsMap]);
-
-  const userTradesChartData = useMemo(() => safeUsers
-    .map((u) => {
-      const stats = getUserStats(u.id);
-      return {
-        name: u.firstName || u.email?.split("@")[0] || "User",
-        trades: stats.totalTrades,
-        winRate: Math.round(stats.winRate),
-      };
-    })
-    .filter((u) => u.trades > 0)
-    .sort((a, b) => b.trades - a.trades)
-    .slice(0, 8), [safeUsers, userStatsMap]);
-
-  const totalStats = useMemo(() => ({
-    totalUsers: safeUsers.length,
-    totalTrades: safeTrades.length,
-    avgWinRate: safeUsers.length > 0 ? safeUsers.reduce((sum, u) => sum + getUserStats(u.id).winRate, 0) / safeUsers.length : 0,
-    totalWins: safeTrades.filter((t) => t.result === "target").length,
-    totalLosses: safeTrades.filter((t) => t.result === "stop_loss").length,
-  }), [safeUsers, safeTrades, userStatsMap]);
 
   const getMedalIcon = (index: number) => {
     if (index === 0) return <Trophy className="w-5 h-5 text-yellow-500" />;
