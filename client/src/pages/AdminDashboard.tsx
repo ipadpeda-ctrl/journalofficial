@@ -90,11 +90,15 @@ export default function AdminDashboard() {
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: async (userId: string) => apiRequest("POST", `/api/admin/users/${userId}/reset-password`),
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("POST", `/api/admin/users/${userId}/reset-password`);
+      return await res.json();
+    },
     onSuccess: (data: any) => {
       toast({
         title: "Password Resettata",
         description: data.message || "La password è stata resettata con successo.",
+        duration: 15000, // Show for 15 seconds so admin can read/copy the temp password
       });
     },
     onError: (error: any) => {
