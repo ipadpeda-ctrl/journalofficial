@@ -11,6 +11,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -28,12 +29,13 @@ function Router() {
   if (!isAuthenticated) {
     return (
       <Switch>
+        <Route path="/landing" component={Landing} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
         <Route>
-          <Redirect to="/login" />
+          <Redirect to="/landing" />
         </Route>
       </Switch>
     );
@@ -42,7 +44,7 @@ function Router() {
   return (
     <Switch>
       {/* --- ROTTE PRINCIPALI --- */}
-      
+
       {/* 1. Admin Dashboard (ha la priorità) */}
       <Route path="/admin" component={AdminDashboard} />
 

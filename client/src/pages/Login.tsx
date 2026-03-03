@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, LogIn, TrendingUp } from "lucide-react";
+import { Loader2, LogIn, TrendingUp, ArrowLeft } from "lucide-react";
 
 import { Link } from "wouter";
 
@@ -120,25 +120,19 @@ export default function Login() {
                   )}
                   Accedi
                 </Button>
-                <Link href="/forgot-password">
-                  <a
-                    className="text-sm font-medium text-primary hover:underline"
-                    data-testid="link-forgot-password"
-                  >
-                    Password dimenticata?
-                  </a>
+                <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline" data-testid="link-forgot-password">
+                  Password dimenticata?
                 </Link>
                 <p className="text-sm text-muted-foreground text-center">
                   Non hai un account?{" "}
-                  <Link href="/register">
-                    <a
-                      className="font-medium text-primary hover:underline"
-                      data-testid="link-register"
-                    >
-                      Registrati
-                    </a>
+                  <Link href="/register" className="font-medium text-primary hover:underline" data-testid="link-register">
+                    Registrati
                   </Link>
                 </p>
+                <Link href="/landing" className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mt-2" data-testid="link-back-to-landing">
+                  <ArrowLeft className="w-4 h-4" />
+                  Torna alla Home
+                </Link>
               </CardFooter>
             </form>
           </Form>
