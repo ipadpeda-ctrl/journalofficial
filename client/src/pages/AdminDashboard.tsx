@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -164,38 +164,56 @@ export default function AdminDashboard() {
   // Filter Logic
   const filteredTrades = safeTrades.filter(t => filterUserId === "all" || t.userId === filterUserId);
 
-  const getUserStats = (userId: string) => {
-    const userTrades = safeTrades.filter((t) => t.userId === userId);
-    const wins = userTrades.filter((t) => t.result === "target").length;
-    const losses = userTrades.filter((t) => t.result === "stop_loss").length;
-    const winRate = userTrades.length > 0 ? (wins / userTrades.length) * 100 : 0;
-    const pnl = userTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-    return { totalTrades: userTrades.length, wins, losses, winRate, pnl };
-  };
+  // Pre-compute stats map in a single O(N) pass instead of per-user O(N) (#15)
+  const userStatsMap = useMemo(() => {
+    const map = new Map<string, { totalTrades: number; wins: number; losses: number; winRate: number; pnl: number }>();
+    for (const t of safeTrades) {
+      let entry = map.get(t.userId);
+      if (!entry) {
+        entry = { totalTrades: 0, wins: 0, losses: 0, winRate: 0, pnl: 0 };
+        map.set(t.userId, entry);
+      }
+      entry.totalTrades++;
+      if (t.result === "target") entry.wins++;
+      if (t.result === "stop_loss") entry.losses++;
+      entry.pnl += t.pnl || 0;
+    }
+    // Compute winRate after accumulation
+    Array.from(map.values()).forEach(entry => {
+      entry.winRate = entry.totalTrades > 0 ? (entry.wins / entry.totalTrades) * 100 : 0;
+    });
+    return map;
+  }, [safeTrades]);
 
-  const leaderboardByWinRate = safeUsers
+  const defaultStats = { totalTrades: 0, wins: 0, losses: 0, winRate: 0, pnl: 0 };
+  const getUserStats = (userId: string) => userStatsMap.get(userId) || defaultStats;
+
+  const leaderboardByWinRate = useMemo(() => safeUsers
     .map((u) => ({ ...u, stats: getUserStats(u.id) }))
     .filter((u) => u.stats.totalTrades >= 1)
     .sort((a, b) => b.stats.winRate - a.stats.winRate)
-    .slice(0, 10);
+    .slice(0, 10), [safeUsers, userStatsMap]);
 
-  const userTradesChartData = safeUsers
-    .map((u) => ({
-      name: u.firstName || u.email?.split("@")[0] || "User",
-      trades: getUserStats(u.id).totalTrades,
-      winRate: Math.round(getUserStats(u.id).winRate),
-    }))
+  const userTradesChartData = useMemo(() => safeUsers
+    .map((u) => {
+      const stats = getUserStats(u.id);
+      return {
+        name: u.firstName || u.email?.split("@")[0] || "User",
+        trades: stats.totalTrades,
+        winRate: Math.round(stats.winRate),
+      };
+    })
     .filter((u) => u.trades > 0)
     .sort((a, b) => b.trades - a.trades)
-    .slice(0, 8);
+    .slice(0, 8), [safeUsers, userStatsMap]);
 
-  const totalStats = {
+  const totalStats = useMemo(() => ({
     totalUsers: safeUsers.length,
     totalTrades: safeTrades.length,
     avgWinRate: safeUsers.length > 0 ? safeUsers.reduce((sum, u) => sum + getUserStats(u.id).winRate, 0) / safeUsers.length : 0,
     totalWins: safeTrades.filter((t) => t.result === "target").length,
     totalLosses: safeTrades.filter((t) => t.result === "stop_loss").length,
-  };
+  }), [safeUsers, safeTrades, userStatsMap]);
 
   const getMedalIcon = (index: number) => {
     if (index === 0) return <Trophy className="w-5 h-5 text-yellow-500" />;
@@ -294,7 +312,7 @@ export default function AdminDashboard() {
                                     size="sm"
                                     variant="outline"
                                     onClick={() => {
-                                      if (confirm(`Sei sicuro di voler resettare la password di ${u.firstName} a "password123"?`)) {
+                                      if (confirm(`Sei sicuro di voler resettare la password di ${u.firstName}? Una nuova password temporanea verrà generata.`)) {
                                         resetPasswordMutation.mutate(u.id);
                                       }
                                     }}

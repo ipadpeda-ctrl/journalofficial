@@ -3,11 +3,22 @@ import type { Server } from "http";
 import passport from "passport";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 import { storage } from "./storage";
 import { setupLocalAuth, isAuthenticated, isAdmin, isSuperAdmin, hashPassword } from "./localAuth";
 import { insertTradeSchema, insertDiarySchema, insertGoalSchema, registerUserSchema, loginUserSchema } from "@shared/schema";
-import { sendPasswordResetEmail } from "./email";
+import { sendPasswordResetEmail, sendAdminResetPasswordEmail } from "./email";
 import rateLimit from "express-rate-limit";
+
+// Zod schema per validazione impostazioni utente
+const updateUserSettingsSchema = z.object({
+  pairs: z.array(z.string().max(20)).max(50).optional(),
+  emotions: z.array(z.string().max(50)).max(50).optional(),
+  confluencesPro: z.array(z.string().max(100)).max(50).optional(),
+  confluencesContro: z.array(z.string().max(100)).max(50).optional(),
+  barrierOptions: z.array(z.string().max(20)).max(20).optional(),
+  isBarrierEnabled: z.boolean().optional(),
+});
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -131,24 +142,31 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Email richiesta" });
       }
 
+      // Always return same response to prevent email enumeration (#8)
+      const genericMessage = "Se l'email esiste, riceverai un link per il reset";
+
       const user = await storage.getUserByEmail(email.toLowerCase());
       if (!user) {
-        return res.json({ message: "Se l'email esiste, riceverai un link per il reset" });
+        return res.json({ message: genericMessage });
       }
 
       const resetToken = crypto.randomBytes(32).toString("hex");
+      // Store only the hash in DB to prevent token theft from DB dumps (#2)
+      const tokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
       const expiry = new Date(Date.now() + 3600000);
 
-      await storage.setResetToken(user.id, resetToken, expiry);
+      await storage.setResetToken(user.id, tokenHash, expiry);
 
       const baseUrl = `${req.protocol}://${req.get("host")}`;
+      // Send the raw token to user, store the hash
       const emailSent = await sendPasswordResetEmail(user.email, resetToken, baseUrl);
 
       if (!emailSent) {
-        return res.status(500).json({ message: "Errore nell'invio dell'email. Verifica che RESEND_API_KEY sia configurata." });
+        console.error("Failed to send reset email for user:", user.id);
       }
 
-      res.json({ message: "Se l'email esiste, riceverai un link per il reset" });
+      // Always return 200 with same message regardless of outcome (#8)
+      res.json({ message: genericMessage });
     } catch (error) {
       console.error("Forgot password error:", error);
       res.status(500).json({ message: "Errore durante la richiesta" });
@@ -167,7 +185,9 @@ export async function registerRoutes(
         return res.status(400).json({ message: "La password deve avere almeno 6 caratteri" });
       }
 
-      const user = await storage.getUserByResetToken(token);
+      // Hash the incoming token and compare against DB hash (#2)
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const user = await storage.getUserByResetToken(tokenHash);
       if (!user) {
         return res.status(400).json({ message: "Token non valido o scaduto" });
       }
@@ -180,6 +200,9 @@ export async function registerRoutes(
       const passwordHash = await hashPassword(password);
       await storage.updateUserPassword(user.id, passwordHash);
       await storage.clearResetToken(user.id);
+
+      // Invalidate all existing sessions for this user (#10)
+      await storage.clearUserSessions(user.id);
 
       res.json({ message: "Password aggiornata con successo" });
     } catch (error) {
@@ -213,7 +236,23 @@ export async function registerRoutes(
       const passwordHash = await hashPassword(newPassword);
       await storage.updateUserPassword(user.id, passwordHash);
 
-      res.json({ message: "Password cambiata con successo" });
+      // Invalidate all other sessions for this user (#10)
+      await storage.clearUserSessions(user.id);
+
+      // Re-login the current session so the user stays authenticated
+      req.login({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        isApproved: user.isApproved,
+      }, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Password cambiata ma errore nella sessione" });
+        }
+        res.json({ message: "Password cambiata con successo" });
+      });
     } catch (error) {
       console.error("Change password error:", error);
       res.status(500).json({ message: "Errore durante il cambio password" });
@@ -267,28 +306,33 @@ export async function registerRoutes(
   app.patch("/api/auth/user", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
-      const { pairs, emotions, confluencesPro, confluencesContro, barrierOptions, isBarrierEnabled } = req.body;
+      const validatedSettings = updateUserSettingsSchema.parse(req.body);
 
-      const user = await storage.updateUserSettings(userId, { pairs, emotions, confluencesPro, confluencesContro, barrierOptions, isBarrierEnabled });
+      const user = await storage.updateUserSettings(userId, validatedSettings);
       if (user) {
         const { passwordHash, ...safeUser } = user;
         res.json(safeUser);
       } else {
         res.status(404).json({ message: "Utente non trovato" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating user settings:", error);
+      if (error.errors) {
+        return res.status(400).json({ message: error.errors[0]?.message || "Dati non validi" });
+      }
       res.status(500).json({ message: "Errore nell'aggiornamento delle impostazioni" });
     }
   });
 
   // ============== TRADE ROUTES ==============
 
-  // Get current user's trades
+  // Get current user's trades (with optional pagination #17)
   app.get("/api/trades", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
-      const trades = await storage.getTradesByUser(userId);
+      const limit = Math.min(parseInt(req.query.limit as string) || 5000, 5000);
+      const offset = parseInt(req.query.offset as string) || 0;
+      const trades = await storage.getTradesByUser(userId, limit, offset);
       res.json(trades);
     } catch (error) {
       console.error("Error fetching trades:", error);
@@ -448,10 +492,12 @@ export async function registerRoutes(
     }
   });
 
-  // Get all trades (admin only)
+  // Get all trades (admin only, with optional pagination #16)
   app.get("/api/admin/trades", isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const trades = await storage.getAllTrades();
+      const limit = Math.min(parseInt(req.query.limit as string) || 5000, 5000);
+      const offset = parseInt(req.query.offset as string) || 0;
+      const trades = await storage.getAllTrades(limit, offset);
       res.json(trades);
     } catch (error) {
       console.error("Error fetching trades:", error);
@@ -525,16 +571,31 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Utente non trovato" });
       }
 
-      // Prevent normal admins from resetting super_admin passwords
+      // Prevent super_admin password reset by non-super_admins
       if (targetUser.role === "super_admin" && req.user!.role !== "super_admin") {
         return res.status(403).json({ message: "Solo un super admin può resettare la password di un altro super admin" });
       }
 
-      const defaultPassword = "password123";
-      const passwordHash = await hashPassword(defaultPassword);
+      // Prevent normal admins from resetting other admin passwords (lateral escalation)
+      if (targetUser.role === "admin" && req.user!.role !== "super_admin") {
+        return res.status(403).json({ message: "Solo un super admin può resettare la password di un admin" });
+      }
+
+      // Generate a secure random temporary password
+      const tempPassword = crypto.randomBytes(12).toString("base64url");
+      const passwordHash = await hashPassword(tempPassword);
       await storage.updateUserPassword(id, passwordHash);
 
-      res.json({ message: "Password resettata con successo. L'utente deve cambiarla al primo accesso." });
+      // Try to send the new password via email
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const emailSent = await sendAdminResetPasswordEmail(targetUser.email, tempPassword, baseUrl);
+
+      if (emailSent) {
+        res.json({ message: "Password resettata e inviata via email all'utente." });
+      } else {
+        // Fallback: return password in response (only visible to admin)
+        res.json({ message: `Password resettata. Nuova password temporanea: ${tempPassword} — Comunicala all'utente in modo sicuro.` });
+      }
     } catch (error) {
       console.error("Error resetting user password:", error);
       res.status(500).json({ message: "Errore nel reset della password" });

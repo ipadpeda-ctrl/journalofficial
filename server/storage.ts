@@ -13,6 +13,7 @@ import {
   type InsertGoal,
 } from "@shared/schema";
 import { db } from "./db";
+import { pool } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
@@ -30,11 +31,12 @@ export interface IStorage {
   updateUserPassword(id: string, passwordHash: string): Promise<User | undefined>;
   setResetToken(id: string, token: string, expiry: Date): Promise<User | undefined>;
   clearResetToken(id: string): Promise<User | undefined>;
+  clearUserSessions(userId: string): Promise<void>;
   isFirstUser(): Promise<boolean>;
 
   // Trade operations
-  getTradesByUser(userId: string): Promise<Trade[]>;
-  getAllTrades(): Promise<Trade[]>;
+  getTradesByUser(userId: string, limit?: number, offset?: number): Promise<Trade[]>;
+  getAllTrades(limit?: number, offset?: number): Promise<Trade[]>;
   createTrade(trade: InsertTrade): Promise<Trade>;
   updateTrade(id: number, userId: string, trade: Partial<InsertTrade>): Promise<Trade | undefined>;
   deleteTrade(id: number, userId: string): Promise<boolean>;
@@ -66,16 +68,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(userData: UpsertUser): Promise<User> {
-    // Check if this is the first user (becomes super_admin with auto-approval)
-    const isFirst = await this.isFirstUser();
-    const role = isFirst ? "super_admin" : "user";
-    const isApproved = isFirst ? "approved" : "pending";
+    // Use a transaction to atomically check first-user and insert (#7 race condition fix)
+    const result = await db.transaction(async (tx) => {
+      // Check if any users exist within the transaction
+      const countResult = await tx.select({ count: sql<number>`count(*)` }).from(users);
+      const isFirst = countResult[0].count === 0;
+      const role = isFirst ? "super_admin" : "user";
+      const isApproved = isFirst ? "approved" : "pending";
 
-    const [user] = await db
-      .insert(users)
-      .values({ ...userData, role, isApproved })
-      .returning();
-    return user;
+      const [user] = await tx
+        .insert(users)
+        .values({ ...userData, role, isApproved })
+        .returning();
+      return user;
+    });
+    return result;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
@@ -133,9 +140,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserSettings(id: string, settings: { pairs?: string[], emotions?: string[], confluencesPro?: string[], confluencesContro?: string[], barrierOptions?: string[], isBarrierEnabled?: boolean }): Promise<User | undefined> {
+    // Explicit field extraction to prevent mass-assignment attacks
+    const safeUpdate: Record<string, any> = { updatedAt: new Date() };
+    if (settings.pairs !== undefined) safeUpdate.pairs = settings.pairs;
+    if (settings.emotions !== undefined) safeUpdate.emotions = settings.emotions;
+    if (settings.confluencesPro !== undefined) safeUpdate.confluencesPro = settings.confluencesPro;
+    if (settings.confluencesContro !== undefined) safeUpdate.confluencesContro = settings.confluencesContro;
+    if (settings.barrierOptions !== undefined) safeUpdate.barrierOptions = settings.barrierOptions;
+    if (settings.isBarrierEnabled !== undefined) safeUpdate.isBarrierEnabled = settings.isBarrierEnabled;
+
     const [user] = await db
       .update(users)
-      .set({ ...settings, updatedAt: new Date() })
+      .set(safeUpdate)
       .where(eq(users.id, id))
       .returning();
     return user;
@@ -181,20 +197,33 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async clearUserSessions(userId: string): Promise<void> {
+    // Delete all sessions belonging to this user from the sessions table.
+    // Sessions store user ID inside the JSON 'sess' column as sess.passport.user
+    await pool.query(
+      `DELETE FROM sessions WHERE sess::jsonb -> 'passport' ->> 'user' = $1`,
+      [userId]
+    );
+  }
+
   // Trade operations
-  async getTradesByUser(userId: string): Promise<Trade[]> {
+  async getTradesByUser(userId: string, limit = 5000, offset = 0): Promise<Trade[]> {
     return await db
       .select()
       .from(trades)
       .where(eq(trades.userId, userId))
-      .orderBy(desc(trades.date), desc(trades.time));
+      .orderBy(desc(trades.date), desc(trades.time))
+      .limit(limit)
+      .offset(offset);
   }
 
-  async getAllTrades(): Promise<Trade[]> {
+  async getAllTrades(limit = 5000, offset = 0): Promise<Trade[]> {
     return await db
       .select()
       .from(trades)
-      .orderBy(desc(trades.date), desc(trades.time));
+      .orderBy(desc(trades.date), desc(trades.time))
+      .limit(limit)
+      .offset(offset);
   }
 
   async createTrade(trade: InsertTrade): Promise<Trade> {
@@ -242,17 +271,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertDiary(diary: InsertDiary): Promise<TradingDiary> {
-    const existing = await this.getDiaryByDate(diary.userId, diary.date);
-    if (existing) {
-      const [updated] = await db
-        .update(tradingDiary)
-        .set({ content: diary.content, mood: diary.mood })
-        .where(eq(tradingDiary.id, existing.id))
-        .returning();
-      return updated;
-    }
-    const [newDiary] = await db.insert(tradingDiary).values(diary).returning();
-    return newDiary;
+    // Use transaction to prevent race condition on concurrent upserts (#19)
+    return await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(tradingDiary)
+        .where(and(eq(tradingDiary.userId, diary.userId), eq(tradingDiary.date, diary.date)));
+
+      if (existing) {
+        const [updated] = await tx
+          .update(tradingDiary)
+          .set({ content: diary.content, mood: diary.mood })
+          .where(eq(tradingDiary.id, existing.id))
+          .returning();
+        return updated;
+      }
+      const [newDiary] = await tx.insert(tradingDiary).values(diary).returning();
+      return newDiary;
+    });
   }
 
   async deleteDiary(id: number, userId: string): Promise<boolean> {
@@ -281,21 +317,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertGoal(goal: InsertGoal): Promise<Goal> {
-    const existing = await this.getGoalByMonth(goal.userId, goal.month, goal.year);
-    if (existing) {
-      const [updated] = await db
-        .update(goals)
-        .set({
-          targetTrades: goal.targetTrades,
-          targetWinRate: goal.targetWinRate,
-          targetProfit: goal.targetProfit,
-        })
-        .where(eq(goals.id, existing.id))
-        .returning();
-      return updated;
-    }
-    const [newGoal] = await db.insert(goals).values(goal).returning();
-    return newGoal;
+    // Use transaction to prevent race condition on concurrent upserts (#19)
+    return await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(goals)
+        .where(and(eq(goals.userId, goal.userId), eq(goals.month, goal.month), eq(goals.year, goal.year)));
+
+      if (existing) {
+        const [updated] = await tx
+          .update(goals)
+          .set({
+            targetTrades: goal.targetTrades,
+            targetWinRate: goal.targetWinRate,
+            targetProfit: goal.targetProfit,
+          })
+          .where(eq(goals.id, existing.id))
+          .returning();
+        return updated;
+      }
+      const [newGoal] = await tx.insert(goals).values(goal).returning();
+      return newGoal;
+    });
   }
 
   async deleteGoal(id: number, userId: string): Promise<boolean> {

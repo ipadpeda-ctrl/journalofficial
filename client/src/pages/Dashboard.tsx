@@ -58,24 +58,7 @@ function mapSchemaTradeToTrade(t: SchemaTrade): Trade {
   };
 }
 
-function exportTradesToCSV(trades: Trade[]) {
-  const headers = ["Data", "Ora", "Coppia", "Direzione", "Target", "Stop Loss", "Risultato", "P&L", "Emozione", "Confluenze Pro", "Confluenze Contro", "TF Allineati", "Barrier", "Note"];
-  const rows = trades.map(t => [
-    t.date, t.time, t.pair, t.direction === "long" ? "Long" : "Short",
-    t.target.toFixed(5), t.stopLoss.toFixed(5), t.result, (t.pnl || 0).toFixed(2),
-    t.emotion, t.confluencesPro.join("; "), t.confluencesContro.join("; "), t.alignedTimeframes.join("; "), t.barrier.join("; "), t.notes.replace(/"/g, '""'),
-  ]);
-  const csvContent = [headers.join(","), ...rows.map(row => row.map(cell => `"${cell}"`).join(","))].join("\n");
-  const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `trades_export_${new Date().toISOString().split("T")[0]}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
+import { exportTradesToCSV } from "@/lib/csvExport";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -224,7 +207,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleEditTrade = (trade: Trade) => { setDuplicateTradeData(null); setEditingTrade(trade); setIsDetailModalOpen(false); setActiveTab("new-entry"); window.history.replaceState(null, "", "/"); };
+  const handleEditTrade = (trade: Trade) => { setDuplicateTradeData(null); setEditingTrade(trade); setIsDetailModalOpen(false); setActiveTab("new-entry"); setLocation("/"); };
   const handleCancelEdit = () => { setEditingTrade(null); setDuplicateTradeData(null); };
   const handleRowClick = (trade: Trade) => { setSelectedTrade(trade); setIsDetailModalOpen(true); };
   const handleDeleteTrade = (id: string) => { deleteTradeMutation.mutate(id); if (editingTrade?.id === id) setEditingTrade(null); };
@@ -337,7 +320,6 @@ export default function Dashboard() {
           barrierOptions={user?.barrierOptions?.length ? user.barrierOptions : defaultBarrierOptions}
           isBarrierEnabled={user?.isBarrierEnabled ?? true}
           initialCapital={initialCapital}
-          onSave={(settings) => console.log("Settings saved:", settings)}
         />}
         {activeTab === "diary" && <TradingDiary />}
         {activeTab === "goals" && <MonthlyGoals trades={trades.map((t) => ({ date: t.date, result: t.result, target: t.target, stopLoss: t.stopLoss, pnl: t.pnl }))} />}

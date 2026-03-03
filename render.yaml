@@ -14,5 +14,3 @@ services:
         generateValue: true
       - key: REPLIT_DEPLOYMENT
         value: "1"
-      - key: SKIP_AUTH
-        value: "true"

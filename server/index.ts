@@ -14,6 +14,7 @@ declare module "http" {
 
 app.use(
   express.json({
+    limit: "50kb",
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
@@ -38,9 +39,14 @@ app.use((req, res, next) => {
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
+  // Only capture response body for non-sensitive endpoints (#6)
+  const isSensitivePath = path.startsWith("/api/auth") || path.startsWith("/api/admin");
+
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
+    if (!isSensitivePath) {
+      capturedJsonResponse = bodyJson;
+    }
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
 
