@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Trade, TradeResult } from "./TradesTable";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell, CartesianGrid } from "recharts";
+import { isWinningTrade } from "@/lib/tradeStatsUtils";
 
 interface ConfluenceStatsProps {
   trades: Trade[];

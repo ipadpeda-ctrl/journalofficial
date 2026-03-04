@@ -1,46 +1,50 @@
 import { Card } from "@/components/ui/card";
 import { Trade } from "./TradesTable";
+import {
+  isWinningTrade,
+  isLosingTrade,
+  getStatisticalTrades,
+  calculateAvgWinPercent,
+  calculateAvgLossPercent,
+} from "@/lib/tradeStatsUtils";
 
 interface RiskOfRuinTableProps {
   trades: Trade[];
 }
 
 export default function RiskOfRuinTable({ trades }: RiskOfRuinTableProps) {
-  const winTrades = trades.filter((t) => t.result === "target" || t.result === "parziale");
-  const lossTrades = trades.filter((t) => t.result === "stop_loss");
+  const statTrades = getStatisticalTrades(trades);
+  const winTrades = statTrades.filter(isWinningTrade);
+  const lossTrades = statTrades.filter(isLosingTrade);
   const totalTrades = winTrades.length + lossTrades.length;
 
   const winRate = totalTrades > 0 ? winTrades.length / totalTrades : 0.5;
-  const avgWin = winTrades.length > 0
-    ? winTrades.reduce((sum, t) => sum + (t.result === "parziale" ? t.target * 0.5 : t.target), 0) / winTrades.length
-    : 2;
-  const avgLoss = lossTrades.length > 0
-    ? lossTrades.reduce((sum, t) => sum + t.stopLoss, 0) / lossTrades.length
-    : 1;
+  const avgWin = calculateAvgWinPercent(trades);
+  const avgLoss = calculateAvgLossPercent(trades);
 
   const payoffRatio = avgLoss > 0 ? avgWin / avgLoss : 2;
 
   const calculateRiskOfRuin = (riskPercent: number): number => {
     if (totalTrades === 0) return 0;
-    
+
     const p = winRate;
     const q = 1 - p;
     const R = payoffRatio;
-    
+
     const edge = (p * R) - q;
     if (edge <= 0) return 100;
-    
+
     const unitsToRuin = Math.floor(100 / riskPercent);
-    
+
     if (R === 1) {
       const a = q / p;
       if (a >= 1) return 100;
       return Math.min(100, Math.pow(a, unitsToRuin) * 100);
     }
-    
+
     const lossProb = q / (p * R);
     if (lossProb >= 1) return 100;
-    
+
     const ror = Math.pow(lossProb, unitsToRuin);
     return Math.min(100, ror * 100);
   };

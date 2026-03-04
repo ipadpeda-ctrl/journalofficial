@@ -19,45 +19,22 @@ import RiskOfRuinTable from "@/components/RiskOfRuinTable";
 import AdvancedMetrics from "@/components/AdvancedMetrics";
 import MonthlyComparison from "@/components/MonthlyComparison";
 
-// Helpers passed as props or re-implemented here if small (using props for simplicity)
+// Centralized stats utilities
+import {
+    calculateWinRate,
+    calculateProfitFactor,
+    calculateTotalEquity,
+    calculateEquityCurve,
+    getStatisticalTrades,
+    isWinningTrade,
+} from "@/lib/tradeStatsUtils";
+
 interface StatisticsViewProps {
     trades: Trade[];
     initialCapital: number;
 }
 
 import { exportTradesToCSV } from "@/lib/csvExport";
-
-function calculateProfitFactor(trades: Trade[]): string {
-    const wins = trades.filter((t) => t.result === "target");
-    const losses = trades.filter((t) => t.result === "stop_loss");
-    const totalWins = wins.reduce((sum, t) => sum + t.target, 0);
-    const totalLosses = losses.reduce((sum, t) => sum + t.stopLoss, 0);
-    if (totalLosses === 0) return totalWins > 0 ? "∞" : "0.00";
-    return (totalWins / totalLosses).toFixed(2);
-}
-
-function calculateEquity(trades: Trade[], initialCapital: number): string {
-    let equity = initialCapital;
-    for (const trade of trades) {
-        if (trade.result === "target") equity += trade.target * 100;
-        else if (trade.result === "stop_loss") equity -= trade.stopLoss * 100;
-        else if (trade.result === "parziale") equity += (trade.target * 0.5) * 100;
-    }
-    return equity.toFixed(2);
-}
-
-function calculateEquityCurve(trades: Trade[], initialCapital: number) {
-    const sortedTrades = [...trades].sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
-    let equity = initialCapital;
-    const curve = [{ date: "Start", equity }];
-    for (const trade of sortedTrades) {
-        if (trade.result === "target") equity += trade.target * 100;
-        else if (trade.result === "stop_loss") equity -= trade.stopLoss * 100;
-        else if (trade.result === "parziale") equity += (trade.target * 0.5) * 100;
-        curve.push({ date: trade.date.slice(5), equity });
-    }
-    return curve;
-}
 
 export default function StatisticsView({ trades, initialCapital }: StatisticsViewProps) {
     const [filterStartDate, setFilterStartDate] = useState("");
@@ -76,12 +53,21 @@ export default function StatisticsView({ trades, initialCapital }: StatisticsVie
     const isFiltered = filterStartDate || filterEndDate;
     const clearFilters = () => { setFilterStartDate(""); setFilterEndDate(""); };
 
-    const stats = useMemo(() => ({
-        totalOperations: filteredTrades.length,
-        winRate: filteredTrades.length > 0 ? ((filteredTrades.filter((t) => t.result === "target").length / filteredTrades.length) * 100).toFixed(1) : "0",
-        profitFactor: calculateProfitFactor(filteredTrades),
-        totalEquity: calculateEquity(filteredTrades, initialCapital),
-    }), [filteredTrades, initialCapital]);
+    const stats = useMemo(() => {
+        const statTrades = getStatisticalTrades(filteredTrades);
+        const winRate = calculateWinRate(filteredTrades);
+        const profitFactor = calculateProfitFactor(filteredTrades);
+        const totalEquity = calculateTotalEquity(filteredTrades, initialCapital);
+
+        return {
+            totalOperations: filteredTrades.length,
+            winRate: winRate.toFixed(1),
+            profitFactor: profitFactor === Infinity ? "∞" : profitFactor.toFixed(2),
+            totalEquity: totalEquity.toFixed(2),
+            winsCount: statTrades.filter(isWinningTrade).length,
+            statTradesCount: statTrades.length,
+        };
+    }, [filteredTrades, initialCapital]);
 
     const equityData = useMemo(() => calculateEquityCurve(filteredTrades, initialCapital), [filteredTrades, initialCapital]);
 
@@ -119,7 +105,7 @@ export default function StatisticsView({ trades, initialCapital }: StatisticsVie
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold font-mono text-emerald-500">{stats.winRate}%</div>
-                        <p className="text-sm text-muted-foreground mt-1">{filteredTrades.filter((t) => t.result === "target").length} vincenti su {filteredTrades.length} totali</p>
+                        <p className="text-sm text-muted-foreground mt-1">{stats.winsCount} vincenti su {stats.statTradesCount} totali</p>
                     </CardContent>
                 </Card>
                 <Card className={`bg-gradient-to-br from-card ${parseFloat(stats.totalEquity) >= initialCapital ? "to-emerald-900/10 border-emerald-500/20" : "to-red-900/10 border-red-500/20"}`}>

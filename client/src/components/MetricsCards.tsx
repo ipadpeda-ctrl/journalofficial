@@ -2,6 +2,16 @@ import { Card } from "@/components/ui/card";
 import { Trade } from "./TradesTable";
 import { CheckCircle, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  getStatisticalTrades,
+  isWinningTrade,
+  isLosingTrade,
+  calculateProfitFactor,
+  calculateAvgWinPercent,
+  calculateAvgLossPercent,
+  calculateExpectancy,
+  calculateWinRate,
+} from "@/lib/tradeStatsUtils";
 
 interface MetricsCardsProps {
   trades: Trade[];
@@ -44,52 +54,35 @@ function MetricCard({ label, value, color, tooltip }: MetricCardProps) {
 }
 
 export default function MetricsCards({ trades }: MetricsCardsProps) {
-  const wins = trades.filter((t) => t.result === "target" || t.result === "parziale");
-  const losses = trades.filter((t) => t.result === "stop_loss");
+  const statTrades = getStatisticalTrades(trades);
 
-  const totalWinAmount = wins.reduce((acc, t) => {
-    if (t.result === "target") return acc + t.target;
-    return acc + (t.target * 0.5);
-  }, 0);
+  const profitFactor = calculateProfitFactor(trades);
+  const profitFactorStr = profitFactor === Infinity ? "∞" : profitFactor.toFixed(2);
 
-  const totalLossAmount = losses.reduce((acc, t) => acc + t.stopLoss, 0);
+  const avgWin = calculateAvgWinPercent(trades);
+  const avgLoss = calculateAvgLossPercent(trades);
 
-  const profitFactor = totalLossAmount > 0 
-    ? (totalWinAmount / totalLossAmount).toFixed(2) 
-    : totalWinAmount > 0 ? "∞" : "0.00";
-
-  const avgWin = wins.length > 0 
-    ? (totalWinAmount / wins.length).toFixed(2) 
-    : "0.00";
-
-  const avgLoss = losses.length > 0 
-    ? (totalLossAmount / losses.length).toFixed(2) 
-    : "0.00";
-
-  const tradesWithRR = trades.filter((t) => t.rr != null && t.rr > 0);
+  // RR medio: rapporto tra avg win e avg loss
+  const tradesWithRR = statTrades.filter((t) => t.rr != null && t.rr > 0);
   const avgRR = tradesWithRR.length > 0
     ? (tradesWithRR.reduce((sum, t) => sum + (t.rr || 0), 0) / tradesWithRR.length).toFixed(2)
-    : parseFloat(avgLoss) > 0 
-      ? (parseFloat(avgWin) / parseFloat(avgLoss)).toFixed(2) 
-      : avgWin;
+    : avgLoss > 0
+      ? (avgWin / avgLoss).toFixed(2)
+      : avgWin > 0 ? avgWin.toFixed(2) : "0.00";
 
-  const winRate = trades.length > 0 
-    ? (wins.length / trades.length) 
-    : 0;
+  // Expectancy in unità percentuali del conto per trade
+  const expectancy = calculateExpectancy(trades);
 
-  const expectancy = trades.length > 0
-    ? ((winRate * parseFloat(avgWin)) - ((1 - winRate) * parseFloat(avgLoss))).toFixed(2)
-    : "0.00";
-
-  const avgLossPercent = losses.length > 0
-    ? `-${(totalLossAmount / losses.length).toFixed(0)}%`
+  // Perdita media come percentuale del conto
+  const avgLossPercent = avgLoss > 0
+    ? `-${avgLoss.toFixed(2)}%`
     : "0%";
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <MetricCard
         label="Profit Factor"
-        value={profitFactor}
+        value={profitFactorStr}
         color="green"
         tooltip="Rapporto tra profitti totali e perdite totali. Un valore sopra 1.5 è considerato buono."
       />
@@ -101,16 +94,17 @@ export default function MetricsCards({ trades }: MetricsCardsProps) {
       />
       <MetricCard
         label="Expectancy"
-        value={`${parseFloat(expectancy) >= 0 ? "" : ""}${expectancy}%`}
+        value={`${expectancy >= 0 ? "+" : ""}${expectancy.toFixed(2)}%`}
         color="teal"
-        tooltip="Guadagno medio atteso per ogni trade. Valore positivo indica strategia profittevole."
+        tooltip="Guadagno medio atteso per trade in % del conto. Valore positivo indica strategia profittevole nel lungo termine."
       />
       <MetricCard
         label="Perdita media"
         value={avgLossPercent}
         color="red"
-        tooltip="Perdita media per ogni trade in perdita."
+        tooltip="Perdita media per ogni trade in perdita, in percentuale del conto."
       />
     </div>
   );
 }
+

@@ -2,6 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trade } from "./TradesTable";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, Legend, LineChart, Line, CartesianGrid } from "recharts";
 import { TrendingUp, Calendar } from "lucide-react";
+import {
+  calculateTradePnlEur,
+  isWinningTrade,
+  getStatisticalTrades,
+} from "@/lib/tradeStatsUtils";
 
 interface MonthlyComparisonProps {
   trades: Trade[];
@@ -19,20 +24,7 @@ interface MonthlyData {
   equity: number;
 }
 
-function calculateTradePnl(trade: Trade): number {
-  if (trade.pnl !== undefined && trade.pnl !== 0) {
-    return trade.pnl; // Se inserito da backend e non 0, usa quello
-  }
-
-  if (trade.result === "target") {
-    return trade.target * 100;
-  } else if (trade.result === "stop_loss") {
-    return -trade.stopLoss * 100;
-  } else if (trade.result === "parziale") {
-    return (trade.target * 0.5) * 100;
-  }
-  return 0;
-}
+// P&L calculation delegated to tradeStatsUtils.calculateTradePnlEur
 
 function calculateMonthlyData(trades: Trade[], initialCapital: number = 10000): MonthlyData[] {
   const monthlyMap = new Map<string, Trade[]>();
@@ -56,11 +48,12 @@ function calculateMonthlyData(trades: Trade[], initialCapital: number = 10000): 
     const [year, month] = monthKey.split("-");
     const monthIndex = parseInt(month, 10) - 1;
 
-    const wins = monthTrades.filter((t) => t.result === "target" || t.result === "parziale").length;
-    const losses = monthTrades.filter((t) => t.result === "stop_loss").length;
-    const winRate = monthTrades.length > 0 ? (wins / monthTrades.length) * 100 : 0;
+    const statMonthTrades = getStatisticalTrades(monthTrades);
+    const wins = statMonthTrades.filter(isWinningTrade).length;
+    const losses = statMonthTrades.filter((t) => t.result === "stop_loss").length;
+    const winRate = statMonthTrades.length > 0 ? (wins / statMonthTrades.length) * 100 : 0;
 
-    const pnl = monthTrades.reduce((sum, t) => sum + calculateTradePnl(t), 0);
+    const pnl = monthTrades.reduce((sum, t) => sum + calculateTradePnlEur(t, initialCapital), 0);
 
     cumulativeEquity += pnl;
 

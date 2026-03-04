@@ -3,10 +3,17 @@ import { Trade } from "./TradesTable";
 import { TrendingDown, TrendingUp, Flame, Calendar, Clock, Info, Activity } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
+import {
+  calculateTradePnlEur,
+  parseTradeDateSafe,
+  getTradeDayOfWeek,
+  isWinningTrade,
+  getStatisticalTrades,
+} from "@/lib/tradeStatsUtils";
 
-function calculateRecoveryFactor(trades: Trade[], maxDrawdown: number): string {
+function calculateRecoveryFactor(trades: Trade[], initialCapital: number, maxDrawdown: number): string {
   if (trades.length === 0) return "0.00";
-  const netProfit = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+  const netProfit = trades.reduce((sum, t) => sum + calculateTradePnlEur(t, initialCapital), 0);
 
   if (netProfit <= 0) return "0.00";
   if (maxDrawdown === 0) return "∞";
@@ -22,11 +29,7 @@ interface AdvancedMetricsProps {
 function calculateMaxDrawdown(trades: Trade[], initialCapital: number): { maxDrawdown: number; maxDrawdownPercent: string } {
   if (trades.length === 0) return { maxDrawdown: 0, maxDrawdownPercent: "0.00" };
 
-  const sortedTrades = [...trades].sort((a, b) => {
-    const dateA = new Date(`${a.date}T${a.time || "00:00"}`);
-    const dateB = new Date(`${b.date}T${b.time || "00:00"}`);
-    return dateA.getTime() - dateB.getTime();
-  });
+  const sortedTrades = [...trades].sort((a, b) => parseTradeDateSafe(a) - parseTradeDateSafe(b));
 
   let equity = initialCapital;
   let peak = initialCapital;
@@ -34,7 +37,7 @@ function calculateMaxDrawdown(trades: Trade[], initialCapital: number): { maxDra
   let maxDrawdownPercentValue = 0;
 
   for (const trade of sortedTrades) {
-    equity += trade.pnl || 0;
+    equity += calculateTradePnlEur(trade, initialCapital);
 
     if (equity > peak) {
       peak = equity;
@@ -57,10 +60,10 @@ function calculateMaxDrawdown(trades: Trade[], initialCapital: number): { maxDra
   };
 }
 
-function calculateSharpeRatio(trades: Trade[]): string {
+function calculateSharpeRatio(trades: Trade[], initialCapital: number): string {
   if (trades.length < 2) return "0.00";
 
-  const returns = trades.map(t => t.pnl || 0);
+  const returns = trades.map(t => calculateTradePnlEur(t, initialCapital));
   const avgReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
 
   const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / (returns.length - 1);
@@ -83,11 +86,7 @@ function calculateStreaks(trades: Trade[]): {
     return { currentStreak: 0, currentStreakType: "none", maxWinStreak: 0, maxLossStreak: 0 };
   }
 
-  const sortedTrades = [...trades].sort((a, b) => {
-    const dateA = new Date(`${a.date}T${a.time || "00:00"}`);
-    const dateB = new Date(`${b.date}T${b.time || "00:00"}`);
-    return dateA.getTime() - dateB.getTime();
-  });
+  const sortedTrades = [...trades].sort((a, b) => parseTradeDateSafe(a) - parseTradeDateSafe(b));
 
   let maxWinStreak = 0;
   let maxLossStreak = 0;
@@ -126,14 +125,11 @@ function calculateStreaks(trades: Trade[]): {
 
 function calculatePerformanceByDay(trades: Trade[]): { day: string; winRate: number; count: number }[] {
   const days = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  const statTrades = getStatisticalTrades(trades);
 
   return days.map((day, index) => {
-    const dayTrades = trades.filter((t) => {
-      const date = new Date(t.date);
-      return date.getDay() === index;
-    });
-
-    const wins = dayTrades.filter((t) => t.result === "target" || t.result === "parziale").length;
+    const dayTrades = statTrades.filter((t) => getTradeDayOfWeek(t) === index);
+    const wins = dayTrades.filter(isWinningTrade).length;
     const winRate = dayTrades.length > 0 ? (wins / dayTrades.length) * 100 : 0;
 
     return { day, winRate, count: dayTrades.length };
@@ -142,16 +138,17 @@ function calculatePerformanceByDay(trades: Trade[]): { day: string; winRate: num
 
 function calculatePerformanceByHour(trades: Trade[]): { hour: string; winRate: number; count: number }[] {
   const hours: { hour: string; winRate: number; count: number }[] = [];
+  const statTrades = getStatisticalTrades(trades);
 
   for (let h = 6; h <= 22; h++) {
     const hourStr = h.toString().padStart(2, "0");
-    const hourTrades = trades.filter((t) => {
+    const hourTrades = statTrades.filter((t) => {
       if (!t.time) return false;
       const tradeHour = parseInt(t.time.split(":")[0], 10);
       return tradeHour === h;
     });
 
-    const wins = hourTrades.filter((t) => t.result === "target" || t.result === "parziale").length;
+    const wins = hourTrades.filter(isWinningTrade).length;
     const winRate = hourTrades.length > 0 ? (wins / hourTrades.length) * 100 : 0;
 
     hours.push({ hour: `${hourStr}:00`, winRate, count: hourTrades.length });
@@ -165,8 +162,8 @@ export default function AdvancedMetrics({ trades, initialCapital }: AdvancedMetr
   const streaks = calculateStreaks(trades);
   const performanceByDay = calculatePerformanceByDay(trades);
   const performanceByHour = calculatePerformanceByHour(trades);
-  const sharpeRatio = calculateSharpeRatio(trades);
-  const recoveryFactor = calculateRecoveryFactor(trades, maxDrawdown);
+  const sharpeRatio = calculateSharpeRatio(trades, initialCapital);
+  const recoveryFactor = calculateRecoveryFactor(trades, initialCapital, maxDrawdown);
 
   return (
     <div className="space-y-6">

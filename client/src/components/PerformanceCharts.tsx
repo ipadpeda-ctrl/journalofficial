@@ -13,6 +13,10 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
+import {
+  calculateTradePnlPercent,
+  calculateDateRange,
+} from "@/lib/tradeStatsUtils";
 
 interface PerformanceByPairProps {
   trades: Trade[];
@@ -25,13 +29,7 @@ export function PerformanceByPair({ trades }: PerformanceByPairProps) {
     if (!pairData[trade.pair]) {
       pairData[trade.pair] = 0;
     }
-    if (trade.result === "target") {
-      pairData[trade.pair] += trade.target;
-    } else if (trade.result === "parziale") {
-      pairData[trade.pair] += trade.target * 0.5;
-    } else if (trade.result === "stop_loss") {
-      pairData[trade.pair] -= trade.stopLoss;
-    }
+    pairData[trade.pair] += calculateTradePnlPercent(trade);
   }
 
   const chartData = Object.entries(pairData)
@@ -121,7 +119,8 @@ export function TradeCountDonut({ trades }: TradeCountDonutProps) {
   }));
 
   const total = trades.length;
-  const tradesPerWeek = (total / Math.max(1, 4)).toFixed(1);
+  const { weeks } = calculateDateRange(trades);
+  const tradesPerWeek = weeks > 0 ? (total / weeks).toFixed(1) : "0";
 
   return (
     <Card className="p-4">

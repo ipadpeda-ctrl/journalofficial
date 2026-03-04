@@ -9,6 +9,13 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import {
+  isWinningTrade,
+  isLosingTrade,
+  getStatisticalTrades,
+  calculateTradePnlPercent,
+  calculateDateRange,
+} from "@/lib/tradeStatsUtils";
 
 interface EquityProjectionProps {
   trades: Trade[];
@@ -16,8 +23,9 @@ interface EquityProjectionProps {
 }
 
 export default function EquityProjection({ trades, initialCapital = 10000 }: EquityProjectionProps) {
-  const winTrades = trades.filter((t) => t.result === "target" || t.result === "parziale");
-  const lossTrades = trades.filter((t) => t.result === "stop_loss");
+  const statTrades = getStatisticalTrades(trades);
+  const winTrades = statTrades.filter(isWinningTrade);
+  const lossTrades = statTrades.filter(isLosingTrade);
   const totalTrades = winTrades.length + lossTrades.length;
 
   if (totalTrades < 30) {
@@ -45,16 +53,17 @@ export default function EquityProjection({ trades, initialCapital = 10000 }: Equ
 
   const winRate = winTrades.length / totalTrades;
   const avgWin = winTrades.length > 0
-    ? winTrades.reduce((sum, t) => sum + (t.result === "parziale" ? t.target * 0.5 : t.target), 0) / winTrades.length
+    ? winTrades.reduce((sum, t) => sum + calculateTradePnlPercent(t), 0) / winTrades.length
     : 0;
   const avgLoss = lossTrades.length > 0
-    ? lossTrades.reduce((sum, t) => sum + t.stopLoss, 0) / lossTrades.length
+    ? Math.abs(lossTrades.reduce((sum, t) => sum + calculateTradePnlPercent(t), 0) / lossTrades.length)
     : 0;
 
   const expectedReturn = (winRate * avgWin) - ((1 - winRate) * avgLoss);
 
   const projectionMonths = 12;
-  const tradesPerMonth = Math.max(1, totalTrades > 0 ? Math.ceil(totalTrades / 3) : 10);
+  const { months: dataMonths } = calculateDateRange(trades);
+  const tradesPerMonth = Math.max(1, totalTrades > 0 ? Math.ceil(totalTrades / dataMonths) : 10);
 
   const projectionData = [];
   let currentCapital = initialCapital;
