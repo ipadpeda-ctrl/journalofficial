@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Trade as SchemaTrade } from "@shared/schema";
 import TradeFilterBar, { TradeFilters, defaultFilters } from "@/components/TradeFilterBar";
+import { getTradeDayOfWeek } from "@/lib/tradeStatsUtils";
 
 const defaultPairs = ["EURUSD", "GBPUSD", "USDJPY", "USDCAD", "AUDUSD", "XAUUSD", "GBPJPY", "EURJPY"];
 const defaultEmotions = ["Neutrale", "FOMO", "Rabbia", "Vendetta", "Speranza", "Fiducioso", "Impaziente", "Paura", "Sicuro", "Stress"];
@@ -131,7 +132,7 @@ export default function Dashboard() {
 
       // Giorno della settimana
       if (filters.daysOfWeek.length > 0) {
-        const tradeDay = new Date(trade.date).getDay();
+        const tradeDay = getTradeDayOfWeek(trade);
         if (!filters.daysOfWeek.includes(tradeDay)) return false;
       }
 

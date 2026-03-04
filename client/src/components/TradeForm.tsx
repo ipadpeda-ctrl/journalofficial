@@ -566,6 +566,13 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
                         setValue("target", (-riskVal).toString());
                       } else if (result === "breakeven" || result === "non_fillato") {
                         setValue("target", "0");
+                      } else {
+                        // target o parziale: ricalcola il target da RR × rischio se disponibile
+                        const rrVal = parseFloat(currentRr);
+                        const riskVal = parseFloat(currentRisk) || 0;
+                        if (!isNaN(rrVal) && rrVal > 0 && riskVal > 0) {
+                          setValue("target", (rrVal * riskVal).toFixed(2));
+                        }
                       }
                     }}
                     data-testid={`button-result-${result}`}

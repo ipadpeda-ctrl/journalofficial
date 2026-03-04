@@ -54,9 +54,9 @@ export default function TradeDetailModal({
   const calculateResultPercent = () => {
     if (trade.result === "target") return `+${trade.target.toFixed(2)}%`;
     if (trade.result === "stop_loss") return `-${trade.stopLoss.toFixed(2)}%`;
-    if (trade.result === "breakeven") return "0%";
+    if (trade.result === "breakeven" || trade.result === "non_fillato") return "0%";
     if (trade.result === "parziale") return `+${(trade.target * 0.5).toFixed(2)}%`;
-    return "-";
+    return "0%";
   };
 
   const nextImage = () => {

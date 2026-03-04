@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { Trade } from "./TradesTable";
+import { calculateTradePnlPercent } from "@/lib/tradeStatsUtils";
 
 interface CalendarProps {
   trades: Trade[];
@@ -59,10 +60,10 @@ export default function Calendar({ trades, onDayClick, onTradeClick }: CalendarP
   };
 
   const getTradeLabel = (trade: Trade): string => {
-    const pnl = trade.result === "target" ? `+${trade.target}%` :
-      trade.result === "stop_loss" ? `-${trade.stopLoss}%` :
-        trade.result === "parziale" ? `+${(trade.target * 0.5).toFixed(1)}%` : "0%";
-    return `(${pnl}) ${trade.pair}`;
+    if (trade.result === "non_fillato") return `(N/F) ${trade.pair}`;
+    const pnl = calculateTradePnlPercent(trade);
+    const pnlStr = pnl > 0 ? `+${pnl.toFixed(1)}%` : pnl < 0 ? `${pnl.toFixed(1)}%` : "0%";
+    return `(${pnlStr}) ${trade.pair}`;
   };
 
   const calendarDays = [];
