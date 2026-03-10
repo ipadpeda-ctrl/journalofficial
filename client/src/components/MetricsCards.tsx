@@ -62,10 +62,10 @@ export default function MetricsCards({ trades }: MetricsCardsProps) {
   const avgWin = calculateAvgWinPercent(trades);
   const avgLoss = calculateAvgLossPercent(trades);
 
-  // RR medio: rapporto tra avg win e avg loss
-  const tradesWithRR = statTrades.filter((t) => t.rr != null && t.rr > 0);
-  const avgRR = tradesWithRR.length > 0
-    ? (tradesWithRR.reduce((sum, t) => sum + (t.rr || 0), 0) / tradesWithRR.length).toFixed(2)
+  // RR medio: solo su trade vincenti (target + parziale), esclude stop_loss
+  const winningTradesWithRR = statTrades.filter((t) => t.rr != null && t.rr > 0 && (t.result === "target" || t.result === "parziale"));
+  const avgRR = winningTradesWithRR.length > 0
+    ? (winningTradesWithRR.reduce((sum, t) => sum + (t.rr || 0), 0) / winningTradesWithRR.length).toFixed(2)
     : avgLoss > 0
       ? (avgWin / avgLoss).toFixed(2)
       : avgWin > 0 ? avgWin.toFixed(2) : "0.00";
