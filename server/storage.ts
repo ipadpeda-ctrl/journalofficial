@@ -3,6 +3,7 @@ import {
   trades,
   tradingDiary,
   goals,
+  strategies,
   type User,
   type UpsertUser,
   type Trade,
@@ -11,6 +12,8 @@ import {
   type InsertDiary,
   type Goal,
   type InsertGoal,
+  type Strategy,
+  type InsertStrategy,
 } from "@shared/schema";
 import { db } from "./db";
 import { pool } from "./db";
@@ -53,6 +56,13 @@ export interface IStorage {
   getGoalByMonth(userId: string, month: number, year: number): Promise<Goal | undefined>;
   upsertGoal(goal: InsertGoal): Promise<Goal>;
   deleteGoal(id: number, userId: string): Promise<boolean>;
+
+  // Strategy operations
+  getStrategiesByUser(userId: string): Promise<Strategy[]>;
+  getStrategyById(id: number, userId: string): Promise<Strategy | undefined>;
+  createStrategy(strategy: InsertStrategy): Promise<Strategy>;
+  updateStrategy(id: number, userId: string, data: Partial<InsertStrategy>): Promise<Strategy | undefined>;
+  deleteStrategy(id: number, userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -345,6 +355,51 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(goals)
       .where(and(eq(goals.id, id), eq(goals.userId, userId)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Strategy operations
+  async getStrategiesByUser(userId: string): Promise<Strategy[]> {
+    return await db
+      .select()
+      .from(strategies)
+      .where(eq(strategies.userId, userId))
+      .orderBy(strategies.name);
+  }
+
+  async getStrategyById(id: number, userId: string): Promise<Strategy | undefined> {
+    const [strategy] = await db
+      .select()
+      .from(strategies)
+      .where(and(eq(strategies.id, id), eq(strategies.userId, userId)));
+    return strategy;
+  }
+
+  async createStrategy(strategy: InsertStrategy): Promise<Strategy> {
+    const [newStrategy] = await db.insert(strategies).values(strategy).returning();
+    return newStrategy;
+  }
+
+  async updateStrategy(id: number, userId: string, data: Partial<InsertStrategy>): Promise<Strategy | undefined> {
+    const [updated] = await db
+      .update(strategies)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(strategies.id, id), eq(strategies.userId, userId)))
+      .returning();
+    return updated;
+  }
+
+  async deleteStrategy(id: number, userId: string): Promise<boolean> {
+    // First, unlink any trades that reference this strategy
+    await db
+      .update(trades)
+      .set({ strategyId: null })
+      .where(and(eq(trades.strategyId, id), eq(trades.userId, userId)));
+
+    const result = await db
+      .delete(strategies)
+      .where(and(eq(strategies.id, id), eq(strategies.userId, userId)))
       .returning();
     return result.length > 0;
   }

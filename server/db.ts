@@ -21,6 +21,21 @@ pool.query(`
   ALTER TABLE users ADD COLUMN IF NOT EXISTS barrier_options text[] DEFAULT '{"m15","m10","m5","m1"}'::text[] NOT NULL;
   ALTER TABLE trades ADD COLUMN IF NOT EXISTS aligned_timeframes text[] DEFAULT '{}'::text[] NOT NULL;
   ALTER TABLE trades ADD COLUMN IF NOT EXISTS barrier text[] DEFAULT '{}'::text[] NOT NULL;
+
+  -- Multi-Strategy support
+  CREATE TABLE IF NOT EXISTS strategies (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR NOT NULL REFERENCES users(id),
+    name VARCHAR(100) NOT NULL,
+    pairs text[],
+    confluences_pro text[],
+    confluences_contro text[],
+    barrier_options text[],
+    is_barrier_enabled BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+  );
+  ALTER TABLE trades ADD COLUMN IF NOT EXISTS strategy_id INTEGER REFERENCES strategies(id);
   COMMIT;
 `).then(() => {
   console.log("Database schema auto-patch verified successfully.");

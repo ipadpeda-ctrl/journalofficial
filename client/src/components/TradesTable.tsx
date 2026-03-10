@@ -37,6 +37,8 @@ export interface Trade {
   barrier: string[];
   imageUrls: string[];
   notes: string;
+  strategyId?: number | null;
+  strategyName?: string;
 }
 
 interface TradesTableProps {

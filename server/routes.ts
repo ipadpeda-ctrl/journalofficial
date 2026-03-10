@@ -393,6 +393,98 @@ export async function registerRoutes(
     }
   });
 
+  // ============== STRATEGY ROUTES ==============
+
+  const updateStrategySchema = z.object({
+    name: z.string().min(1).max(100).optional(),
+    pairs: z.array(z.string().max(20)).max(50).optional(),
+    confluencesPro: z.array(z.string().max(100)).max(50).optional(),
+    confluencesContro: z.array(z.string().max(100)).max(50).optional(),
+    barrierOptions: z.array(z.string().max(20)).max(20).optional(),
+    isBarrierEnabled: z.boolean().optional(),
+  });
+
+  // Get user's strategies
+  app.get("/api/strategies", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const strategies = await storage.getStrategiesByUser(userId);
+      res.json(strategies);
+    } catch (error) {
+      console.error("Error fetching strategies:", error);
+      res.status(500).json({ message: "Errore nel recupero delle strategie" });
+    }
+  });
+
+  // Create a new strategy
+  app.post("/api/strategies", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { name, pairs, confluencesPro, confluencesContro, barrierOptions, isBarrierEnabled } = req.body;
+
+      if (!name || typeof name !== "string" || name.trim().length === 0) {
+        return res.status(400).json({ message: "Nome strategia richiesto" });
+      }
+      if (name.length > 100) {
+        return res.status(400).json({ message: "Nome strategia troppo lungo (max 100 caratteri)" });
+      }
+
+      const strategy = await storage.createStrategy({
+        userId,
+        name: name.trim(),
+        pairs: pairs || [],
+        confluencesPro: confluencesPro || [],
+        confluencesContro: confluencesContro || [],
+        barrierOptions: barrierOptions || [],
+        isBarrierEnabled: isBarrierEnabled ?? true,
+      });
+      res.status(201).json(strategy);
+    } catch (error) {
+      console.error("Error creating strategy:", error);
+      res.status(400).json({ message: "Errore nella creazione della strategia" });
+    }
+  });
+
+  // Update a strategy
+  app.patch("/api/strategies/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "ID non valido" });
+
+      const validatedData = updateStrategySchema.parse(req.body);
+      const strategy = await storage.updateStrategy(id, userId, validatedData);
+      if (!strategy) {
+        return res.status(404).json({ message: "Strategia non trovata" });
+      }
+      res.json(strategy);
+    } catch (error: any) {
+      console.error("Error updating strategy:", error);
+      if (error.errors) {
+        return res.status(400).json({ message: error.errors[0]?.message || "Dati non validi" });
+      }
+      res.status(400).json({ message: "Errore nell'aggiornamento della strategia" });
+    }
+  });
+
+  // Delete a strategy
+  app.delete("/api/strategies/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "ID non valido" });
+
+      const deleted = await storage.deleteStrategy(id, userId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Strategia non trovata" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting strategy:", error);
+      res.status(500).json({ message: "Errore nell'eliminazione della strategia" });
+    }
+  });
+
   // ============== DIARY ROUTES ==============
 
   app.get("/api/diary", isAuthenticated, async (req, res) => {

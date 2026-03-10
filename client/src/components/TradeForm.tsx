@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X, Copy, Upload } from "lucide-react";
 import ConfluenceTag from "./ConfluenceTag";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -46,6 +47,16 @@ interface TradeFormProps {
   onCancelEdit?: () => void;
 }
 
+interface StrategyOption {
+  id: number;
+  name: string;
+  pairs: string[] | null;
+  confluencesPro: string[] | null;
+  confluencesContro: string[] | null;
+  barrierOptions: string[] | null;
+  isBarrierEnabled: boolean | null;
+}
+
 export type TradeResult = "target" | "stop_loss" | "breakeven" | "parziale" | "non_fillato";
 
 export interface TradeFormData {
@@ -67,6 +78,7 @@ export interface TradeFormData {
   barrier: string[];
   imageUrls: string[];
   notes: string;
+  strategyId?: number | null;
 }
 
 export const tradeFormSchema = z.object({
@@ -88,6 +100,7 @@ export const tradeFormSchema = z.object({
   barrier: z.array(z.string()),
   imageUrls: z.array(z.string()),
   notes: z.string().optional(),
+  strategyId: z.number().nullable().optional(),
 });
 
 export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initialData, onCancelEdit }: TradeFormProps) {
@@ -95,12 +108,37 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
 
   const customUser = user as CustomUser | null;
 
+  // Strategy state
+  const [selectedStrategyId, setSelectedStrategyId] = useState<number | null>(
+    editingTrade?.strategyId ?? initialData?.strategyId ?? null
+  );
 
-  const pairs = customUser?.pairs?.length ? customUser.pairs : DEFAULT_PAIRS;
+  const { data: strategiesData = [] } = useQuery<StrategyOption[]>({
+    queryKey: ["/api/strategies"],
+  });
+
+  const selectedStrategy = useMemo(
+    () => strategiesData.find((s) => s.id === selectedStrategyId) || null,
+    [strategiesData, selectedStrategyId]
+  );
+
+  // Dynamic parameters: use strategy-specific if selected, otherwise global user settings
+  const pairs = selectedStrategy?.pairs?.length
+    ? selectedStrategy.pairs
+    : customUser?.pairs?.length ? customUser.pairs : DEFAULT_PAIRS;
   const emotions = customUser?.emotions?.length ? customUser.emotions : DEFAULT_EMOTIONS;
-  const availableConfluencesPro = customUser?.confluencesPro?.length ? customUser.confluencesPro : DEFAULT_CONFLUENCES_PRO;
-  const availableConfluencesContro = customUser?.confluencesContro?.length ? customUser.confluencesContro : DEFAULT_CONFLUENCES_CONTRO;
-  const availableBarrierOptions = customUser?.barrierOptions?.length ? customUser.barrierOptions : DEFAULT_BARRIER_OPTIONS;
+  const availableConfluencesPro = selectedStrategy?.confluencesPro?.length
+    ? selectedStrategy.confluencesPro
+    : customUser?.confluencesPro?.length ? customUser.confluencesPro : DEFAULT_CONFLUENCES_PRO;
+  const availableConfluencesContro = selectedStrategy?.confluencesContro?.length
+    ? selectedStrategy.confluencesContro
+    : customUser?.confluencesContro?.length ? customUser.confluencesContro : DEFAULT_CONFLUENCES_CONTRO;
+  const availableBarrierOptions = selectedStrategy?.barrierOptions?.length
+    ? selectedStrategy.barrierOptions
+    : customUser?.barrierOptions?.length ? customUser.barrierOptions : DEFAULT_BARRIER_OPTIONS;
+  const isBarrierEnabledForForm = selectedStrategy
+    ? selectedStrategy.isBarrierEnabled !== false
+    : customUser?.isBarrierEnabled !== false;
 
   const form = useForm<TradeFormData>({
     resolver: zodResolver(tradeFormSchema),
@@ -304,7 +342,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
   };
 
   const handleValidSubmit = (data: TradeFormData) => {
-    onSubmit?.(data);
+    onSubmit?.({ ...data, strategyId: selectedStrategyId });
   };
 
   const addConfluence = (type: "pro" | "contro", value: string) => {
@@ -359,6 +397,41 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
             </Button>
           )}
         </div>
+
+        {/* STRATEGY SELECTOR */}
+        {strategiesData.length > 0 && (
+          <div className="space-y-2">
+            <Label htmlFor="strategy">Strategia</Label>
+            <Select
+              value={selectedStrategyId?.toString() || "__none__"}
+              onValueChange={(val) => {
+                const newId = val === "__none__" ? null : parseInt(val);
+                setSelectedStrategyId(newId);
+                // Clear pair selection when switching strategy to avoid stale selections
+                setValue("pair", "");
+                // Clear confluences and barriers
+                setValue("confluencesPro", []);
+                setValue("confluencesContro", []);
+                setValue("barrier", []);
+              }}
+            >
+              <SelectTrigger id="strategy" data-testid="select-strategy">
+                <SelectValue placeholder="Seleziona strategia" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Nessuna (usa parametri globali)</SelectItem>
+                {strategiesData.map((s) => (
+                  <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedStrategy && (
+              <p className="text-xs text-muted-foreground">
+                Parametri caricati da: <span className="font-medium text-primary">{selectedStrategy.name}</span>
+              </p>
+            )}
+          </div>
+        )}
 
         {/* SECTION 1: GENERAL INFO (Manual) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -708,7 +781,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
         </div>
 
         {/* ALIGNED TIMEFRAMES & BARRIER */}
-        <div className={`grid gap-6 bg-muted/10 p-4 rounded-lg border border-border/40 ${customUser?.isBarrierEnabled !== false ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
+        <div className={`grid gap-6 bg-muted/10 p-4 rounded-lg border border-border/40 ${isBarrierEnabledForForm ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
           <div className="space-y-3">
             <Label className="text-cyan-400 font-semibold text-sm">TF. Allineati (Macro)</Label>
             <div className="flex flex-wrap gap-2">
@@ -734,7 +807,7 @@ export default function TradeForm({ onSubmit, onDuplicate, editingTrade, initial
             </p>
           </div>
 
-          {customUser?.isBarrierEnabled !== false && (
+          {isBarrierEnabledForForm && (
             <div className="space-y-3">
               <Label className="text-cyan-400 font-semibold text-sm">Barrier (Microstrutture confermate)</Label>
               <div className="flex flex-wrap gap-2">

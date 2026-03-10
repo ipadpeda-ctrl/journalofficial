@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, X, Save, Wallet, Loader2, Pencil, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ChangePassword from "@/components/ChangePassword";
+import StrategyManager from "@/components/StrategyManager";
 
 interface SettingsProps {
   pairs: string[];
@@ -192,6 +193,17 @@ export default function Settings({
       </Card>
 
       <ChangePassword />
+
+      <StrategyManager />
+
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-lg font-medium">Parametri Globali (Default)</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Questi parametri vengono usati quando non selezioni una strategia specifica nella nuova operazione.
+        </p>
+      </Card>
 
       <Card className="p-6">
         <h2 className="text-lg font-medium mb-4">Coppie di Trading</h2>

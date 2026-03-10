@@ -18,6 +18,7 @@ import RRDistributionChart from "@/components/RRDistributionChart";
 import RiskOfRuinTable from "@/components/RiskOfRuinTable";
 import AdvancedMetrics from "@/components/AdvancedMetrics";
 import MonthlyComparison from "@/components/MonthlyComparison";
+import StrategyComparison from "@/components/StrategyComparison";
 
 // Centralized stats utilities
 import {
@@ -124,6 +125,7 @@ export default function StatisticsView({ trades, initialCapital }: StatisticsVie
             <MetricsCards trades={filteredTrades} />
             <AdvancedMetrics trades={filteredTrades} initialCapital={initialCapital} />
             <MonthlyComparison trades={filteredTrades} initialCapital={initialCapital} />
+            <StrategyComparison trades={filteredTrades} />
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <ResultBreakdownCard title="Take Profit" result="target" trades={filteredTrades} color="hsl(142, 71%, 45%)" />

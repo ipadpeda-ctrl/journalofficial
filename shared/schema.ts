@@ -70,10 +70,34 @@ export const loginUserSchema = z.object({
 
 export type LoginUser = z.infer<typeof loginUserSchema>;
 
+// Strategies table - each strategy has its own parameters
+export const strategies = pgTable("strategies", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: varchar("name", { length: 100 }).notNull(),
+  pairs: text("pairs").array(),
+  confluencesPro: text("confluences_pro").array(),
+  confluencesContro: text("confluences_contro").array(),
+  barrierOptions: text("barrier_options").array(),
+  isBarrierEnabled: boolean("is_barrier_enabled").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertStrategySchema = createInsertSchema(strategies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertStrategy = z.infer<typeof insertStrategySchema>;
+export type Strategy = typeof strategies.$inferSelect;
+
 // Trades table connected to users
 export const trades = pgTable("trades", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
+  strategyId: integer("strategy_id").references(() => strategies.id),
   date: varchar("date").notNull(),
   time: varchar("time"),
   closeTime: varchar("close_time"),

@@ -22,6 +22,7 @@ export interface TradeFilters {
     confluencesContro: string[];
     alignedTimeframes: string[];
     barriers: string[];
+    strategyIds: string[]; // strategy IDs as strings for MultiSelectFilter compatibility
 }
 
 export const defaultFilters: TradeFilters = {
@@ -37,6 +38,7 @@ export const defaultFilters: TradeFilters = {
     confluencesContro: [],
     alignedTimeframes: [],
     barriers: [],
+    strategyIds: [],
 };
 
 interface TradeFilterBarProps {
@@ -47,6 +49,7 @@ interface TradeFilterBarProps {
     availableConfluencesContro: string[];
     availableAlignedTimeframes: string[];
     availableBarriers: string[];
+    availableStrategies: { id: number; name: string }[];
     tradesCount: number;
 }
 
@@ -158,6 +161,7 @@ export default function TradeFilterBar({
     availableConfluencesContro,
     availableAlignedTimeframes,
     availableBarriers,
+    availableStrategies,
     tradesCount,
 }: TradeFilterBarProps) {
     const [isOpen, setIsOpen] = useState(false);
@@ -177,6 +181,7 @@ export default function TradeFilterBar({
         count += filters.confluencesContro.length;
         count += filters.alignedTimeframes.length;
         count += filters.barriers.length;
+        count += filters.strategyIds.length;
         return count;
     }, [filters]);
 
@@ -229,6 +234,19 @@ export default function TradeFilterBar({
 
             {isOpen && (
                 <div className="pt-2 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 animate-in fade-in slide-in-from-top-4">
+
+                    {/* STRATEGY */}
+                    {availableStrategies.length > 0 && (
+                        <MultiSelectFilter
+                            title="Strategia"
+                            options={[
+                                { label: "Senza strategia", value: "__none__" },
+                                ...availableStrategies.map(s => ({ label: s.name, value: s.id.toString() }))
+                            ]}
+                            selectedValues={filters.strategyIds}
+                            onSelectionChange={(v) => updateFilter("strategyIds", v)}
+                        />
+                    )}
 
                     {/* PAIR & RESULT */}
                     <MultiSelectFilter

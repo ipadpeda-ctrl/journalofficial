@@ -23,6 +23,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Trade as SchemaTrade } from "@shared/schema";
+import type { Strategy as SchemaStrategy } from "@shared/schema";
 import TradeFilterBar, { TradeFilters, defaultFilters } from "@/components/TradeFilterBar";
 import { getTradeDayOfWeek } from "@/lib/tradeStatsUtils";
 
@@ -34,7 +35,7 @@ const defaultBarrierOptions = ["m15", "m10", "m5", "m1"];
 const FIXED_ALIGNED_TIMEFRAMES = ["Mensile", "Settimanale", "Daily", "H4", "H1", "M30"];
 
 // --- Helpers e Mappers ---
-function mapSchemaTradeToTrade(t: SchemaTrade): Trade {
+function mapSchemaTradeToTrade(t: SchemaTrade, strategyMap: Map<number, string>): Trade {
   return {
     id: t.id.toString(),
     date: t.date,
@@ -56,6 +57,8 @@ function mapSchemaTradeToTrade(t: SchemaTrade): Trade {
     barrier: t.barrier || [],
     imageUrls: t.imageUrls || [],
     notes: t.notes || "",
+    strategyId: t.strategyId || null,
+    strategyName: t.strategyId ? strategyMap.get(t.strategyId) || undefined : undefined,
   };
 }
 
@@ -118,7 +121,22 @@ export default function Dashboard() {
     queryKey: ["/api/trades"],
   });
 
-  const trades: Trade[] = schemaTrades.map(mapSchemaTradeToTrade);
+  const { data: schemaStrategies = [] } = useQuery<SchemaStrategy[]>({
+    queryKey: ["/api/strategies"],
+  });
+
+  const strategyMap = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const s of schemaStrategies) {
+      map.set(s.id, s.name);
+    }
+    return map;
+  }, [schemaStrategies]);
+
+  const trades: Trade[] = useMemo(
+    () => schemaTrades.map((t) => mapSchemaTradeToTrade(t, strategyMap)),
+    [schemaTrades, strategyMap]
+  );
 
   const filteredTrades = useMemo(() => {
     return trades.filter((trade) => {
@@ -167,17 +185,23 @@ export default function Dashboard() {
         if (!hasMatch) return false;
       }
 
+      // Strategy
+      if (filters.strategyIds.length > 0) {
+        const tradeStratId = trade.strategyId?.toString() || "__none__";
+        if (!filters.strategyIds.includes(tradeStratId)) return false;
+      }
+
       return true;
     });
   }, [trades, filters]);
 
   const createTradeMutation = useMutation({
-    mutationFn: async (data: TradeFormData) => apiRequest("POST", "/api/trades", { ...data, target: parseFloat(data.target), stopLoss: parseFloat(data.stopLoss), slPips: data.slPips ? parseFloat(data.slPips) : null, tpPips: data.tpPips ? parseFloat(data.tpPips) : null, rr: data.rr ? parseFloat(data.rr) : null }),
+    mutationFn: async (data: TradeFormData) => apiRequest("POST", "/api/trades", { ...data, target: parseFloat(data.target), stopLoss: parseFloat(data.stopLoss), slPips: data.slPips ? parseFloat(data.slPips) : null, tpPips: data.tpPips ? parseFloat(data.tpPips) : null, rr: data.rr ? parseFloat(data.rr) : null, strategyId: data.strategyId || null }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/trades"] }),
   });
 
   const updateTradeMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: TradeFormData }) => apiRequest("PATCH", `/api/trades/${id}`, { ...data, target: parseFloat(data.target), stopLoss: parseFloat(data.stopLoss), slPips: data.slPips ? parseFloat(data.slPips) : null, tpPips: data.tpPips ? parseFloat(data.tpPips) : null, rr: data.rr ? parseFloat(data.rr) : null }),
+    mutationFn: async ({ id, data }: { id: string; data: TradeFormData }) => apiRequest("PATCH", `/api/trades/${id}`, { ...data, target: parseFloat(data.target), stopLoss: parseFloat(data.stopLoss), slPips: data.slPips ? parseFloat(data.slPips) : null, tpPips: data.tpPips ? parseFloat(data.tpPips) : null, rr: data.rr ? parseFloat(data.rr) : null, strategyId: data.strategyId || null }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/trades"] }),
   });
 
@@ -273,6 +297,7 @@ export default function Dashboard() {
             availableConfluencesContro={user?.confluencesContro?.length ? user.confluencesContro : defaultConfluencesContro}
             availableAlignedTimeframes={FIXED_ALIGNED_TIMEFRAMES}
             availableBarriers={user?.barrierOptions?.length ? user.barrierOptions : defaultBarrierOptions}
+            availableStrategies={schemaStrategies.map(s => ({ id: s.id, name: s.name }))}
             tradesCount={filteredTrades.length}
           />
         )}
@@ -307,7 +332,7 @@ export default function Dashboard() {
             key={duplicateTradeData ? `duplicate_${duplicateKey}` : (editingTrade ? editingTrade.id : `new_${submitKey}`)}
             onSubmit={handleSubmitTrade}
             onDuplicate={handleDuplicate}
-            editingTrade={editingTrade ? { ...editingTrade, target: editingTrade.target.toString(), stopLoss: editingTrade.stopLoss.toString(), slPips: editingTrade.slPips?.toString() || "", tpPips: editingTrade.tpPips?.toString() || "", rr: editingTrade.rr?.toString() || "", alignedTimeframes: editingTrade.alignedTimeframes || [], barrier: editingTrade.barrier || [] } : undefined}
+            editingTrade={editingTrade ? { ...editingTrade, target: editingTrade.target.toString(), stopLoss: editingTrade.stopLoss.toString(), slPips: editingTrade.slPips?.toString() || "", tpPips: editingTrade.tpPips?.toString() || "", rr: editingTrade.rr?.toString() || "", alignedTimeframes: editingTrade.alignedTimeframes || [], barrier: editingTrade.barrier || [], strategyId: editingTrade.strategyId || null } : undefined}
             initialData={duplicateTradeData || undefined}
             onCancelEdit={handleCancelEdit}
           />
