@@ -323,7 +323,7 @@ export default function Dashboard() {
           initialCapital={initialCapital}
         />}
         {activeTab === "diary" && <TradingDiary />}
-        {activeTab === "goals" && <MonthlyGoals trades={trades.map((t) => ({ date: t.date, result: t.result, target: t.target, stopLoss: t.stopLoss, pnl: t.pnl }))} />}
+        {activeTab === "goals" && <MonthlyGoals trades={trades} initialCapital={initialCapital} />}
       </main>
     </div>
   );

@@ -76,8 +76,8 @@ export default function TradingDiary() {
   };
 
   const navigateDay = (direction: number) => {
-    const date = new Date(selectedDate);
-    date.setDate(date.getDate() + direction);
+    const [y, m, d] = selectedDate.split("-").map(Number);
+    const date = new Date(y, m - 1, d + direction);
     handleDateChange(formatDate(date));
   };
 
@@ -220,9 +220,8 @@ export default function TradingDiary() {
                       <button
                         key={entry.id}
                         onClick={() => handleDateChange(entry.date)}
-                        className={`w-full text-left p-3 rounded-md border transition-colors hover-elevate ${
-                          entry.date === selectedDate ? "bg-accent" : ""
-                        }`}
+                        className={`w-full text-left p-3 rounded-md border transition-colors hover-elevate ${entry.date === selectedDate ? "bg-accent" : ""
+                          }`}
                         data-testid={`diary-entry-${entry.id}`}
                       >
                         <div className="flex items-center justify-between gap-2">

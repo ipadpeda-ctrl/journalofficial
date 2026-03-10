@@ -8,6 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Save, Target, TrendingUp, Percent, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Goal } from "@shared/schema";
+import {
+  calculateTradePnlEur,
+  calculateWinRate,
+  getStatisticalTrades,
+  isWinningTrade,
+} from "@/lib/tradeStatsUtils";
 
 const months = [
   "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
@@ -15,10 +21,11 @@ const months = [
 ];
 
 interface MonthlyGoalsProps {
-  trades: { date: string; result: string; target?: number; stopLoss?: number; pnl?: number }[];
+  trades: { id: string; date: string; result: string; target: number; stopLoss: number; direction: string; pair: string; time: string; emotion: string; confluencesPro: string[]; confluencesContro: string[]; alignedTimeframes: string[]; barrier: string[]; imageUrls: string[]; notes: string; pnl?: number }[];
+  initialCapital?: number;
 }
 
-export default function MonthlyGoals({ trades }: MonthlyGoalsProps) {
+export default function MonthlyGoals({ trades, initialCapital = 10000 }: MonthlyGoalsProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -51,22 +58,13 @@ export default function MonthlyGoals({ trades }: MonthlyGoalsProps) {
   }, [trades, selectedMonth, selectedYear]);
 
   const actualStats = useMemo(() => {
-    const total = monthlyTrades.length;
-    const wins = monthlyTrades.filter((t) => t.result === "target").length;
+    const statTrades = getStatisticalTrades(monthlyTrades as any);
+    const total = statTrades.length;
+    const wins = statTrades.filter(isWinningTrade).length;
     const winRate = total > 0 ? (wins / total) * 100 : 0;
-    let profit = 0;
-    monthlyTrades.forEach((t) => {
-      if (t.pnl !== undefined && t.pnl !== 0) {
-        profit += t.pnl; // Se c'è PNL salvato nel DB usa quello
-      } else {
-        // Fallback
-        if (t.result === "target") profit += (t.target || 0) * 100;
-        else if (t.result === "stop_loss") profit -= (t.stopLoss || 0) * 100;
-        else if (t.result === "parziale") profit += (t.target || 0) * 50;
-      }
-    });
-    return { total, winRate, profit };
-  }, [monthlyTrades]);
+    const profit = monthlyTrades.reduce((acc, t) => acc + calculateTradePnlEur(t as any, initialCapital), 0);
+    return { total: monthlyTrades.length, statTotal: total, winRate, profit };
+  }, [monthlyTrades, initialCapital]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -282,7 +280,7 @@ export default function MonthlyGoals({ trades }: MonthlyGoalsProps) {
               <div className="text-xs text-muted-foreground">Trade Totali</div>
             </div>
             <div className="text-center p-4 bg-muted/50 rounded-md">
-              <div className="text-2xl font-bold font-mono">{monthlyTrades.filter(t => t.result === "target").length}</div>
+              <div className="text-2xl font-bold font-mono">{monthlyTrades.filter(t => t.result === "target" || t.result === "parziale").length}</div>
               <div className="text-xs text-muted-foreground">Vincenti</div>
             </div>
             <div className="text-center p-4 bg-muted/50 rounded-md">

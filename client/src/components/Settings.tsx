@@ -108,8 +108,12 @@ export default function Settings({
     value: string,
     clearInput: () => void
   ) => {
-    if (value.trim()) {
-      setter((prev) => [...prev, value.trim()]);
+    const trimmed = value.trim();
+    if (trimmed) {
+      setter((prev) => {
+        if (prev.includes(trimmed)) return prev; // Evita duplicati
+        return [...prev, trimmed];
+      });
       clearInput();
     }
   };

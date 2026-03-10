@@ -1,4 +1,5 @@
 import type { Trade } from "@/components/TradesTable";
+import { calculateTradePnlPercent } from "@/lib/tradeStatsUtils";
 
 /**
  * Escape a value for safe CSV output:
@@ -32,7 +33,7 @@ export function exportTradesToCSV(trades: Trade[]) {
         (t.target || 0).toFixed(5),
         (t.stopLoss || 0).toFixed(5),
         t.result,
-        (t.pnl || 0).toFixed(2),
+        (t.pnl || calculateTradePnlPercent(t)).toFixed(2),
         t.emotion,
         (t.confluencesPro || []).join("; "),
         (t.confluencesContro || []).join("; "),
