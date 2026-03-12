@@ -43,6 +43,7 @@ export const users = pgTable("users", {
   confluencesContro: text("confluences_contro").array(),
   barrierOptions: text("barrier_options").array(),
   isBarrierEnabled: boolean("is_barrier_enabled").default(true),
+  hasCompletedTutorial: boolean("has_completed_tutorial").default(false),
   resetToken: varchar("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),
   createdAt: timestamp("created_at").defaultNow(),

@@ -35,6 +35,7 @@ export interface IStorage {
   setResetToken(id: string, token: string, expiry: Date): Promise<User | undefined>;
   clearResetToken(id: string): Promise<User | undefined>;
   clearUserSessions(userId: string): Promise<void>;
+  updateUserTutorial(id: string, hasCompletedTutorial: boolean): Promise<User | undefined>;
   isFirstUser(): Promise<boolean>;
 
   // Trade operations
@@ -214,6 +215,15 @@ export class DatabaseStorage implements IStorage {
       `DELETE FROM sessions WHERE sess::jsonb -> 'passport' ->> 'user' = $1`,
       [userId]
     );
+  }
+
+  async updateUserTutorial(id: string, hasCompletedTutorial: boolean): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ hasCompletedTutorial, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
   }
 
   // Trade operations

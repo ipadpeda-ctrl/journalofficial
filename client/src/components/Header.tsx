@@ -57,7 +57,7 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === tab.id
+            className={`tutorial-step-${tab.id} px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === tab.id
                 ? "text-foreground"
                 : "text-muted-foreground hover-elevate"
               }`}

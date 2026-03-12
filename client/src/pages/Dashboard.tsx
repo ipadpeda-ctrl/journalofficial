@@ -18,6 +18,7 @@ import StatisticsView from "@/components/views/StatisticsView";
 import MonthlyComparison from "@/components/MonthlyComparison";
 import TradingDiary from "@/components/TradingDiary";
 import MonthlyGoals from "@/components/MonthlyGoals";
+import OnboardingTour from "@/components/OnboardingTour";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -285,6 +286,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <Header activeTab={activeTab} onTabChange={handleTabChange} />
+      <OnboardingTour onTabChange={handleTabChange} />
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Mostriamo la TradeFilterBar su tutte le tab tranne New Entry, Settings, Diary, Goals */}

@@ -302,6 +302,29 @@ export async function registerRoutes(
     }
   });
 
+  // Update user's tutorial status
+  app.patch("/api/auth/user/tutorial", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { hasCompletedTutorial } = req.body;
+
+      if (typeof hasCompletedTutorial !== "boolean") {
+        return res.status(400).json({ message: "Valore boolean richiesto" });
+      }
+
+      const user = await storage.updateUserTutorial(userId, hasCompletedTutorial);
+      if (user) {
+        const { passwordHash, ...safeUser } = user;
+        res.json(safeUser);
+      } else {
+        res.status(404).json({ message: "Utente non trovato" });
+      }
+    } catch (error) {
+      console.error("Error updating tutorial status:", error);
+      res.status(500).json({ message: "Errore nell'aggiornamento dello stato del tutorial" });
+    }
+  });
+
   // Update user's settings (pairs, emotions, confluences, barriers)
   app.patch("/api/auth/user", isAuthenticated, async (req, res) => {
     try {
