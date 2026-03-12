@@ -19,6 +19,7 @@ export const pool = new Pool({
 pool.query(`
   BEGIN;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS barrier_options text[] DEFAULT '{"m15","m10","m5","m1"}'::text[] NOT NULL;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS has_completed_tutorial boolean DEFAULT false;
   ALTER TABLE trades ADD COLUMN IF NOT EXISTS aligned_timeframes text[] DEFAULT '{}'::text[] NOT NULL;
   ALTER TABLE trades ADD COLUMN IF NOT EXISTS barrier text[] DEFAULT '{}'::text[] NOT NULL;
 
