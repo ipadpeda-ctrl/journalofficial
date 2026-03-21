@@ -355,19 +355,21 @@ export default function AdminDashboard() {
                                   >
                                     <KeyRound className="w-4 h-4 text-muted-foreground" />
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => {
-                                      if (confirm(`Sei ASSOLUTAMENTE sicuro di voler eliminare l'utente ${u.firstName} (${u.email})? Tutti i suoi trade, report e analisi verranno distrutti irreversibilmente.`)) {
-                                        deleteUserMutation.mutate(u.id);
-                                      }
-                                    }}
-                                    disabled={deleteUserMutation.isPending}
-                                    title="Elimina Utente"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
+                                  {isSuperAdmin && (
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => {
+                                        if (confirm(`Sei ASSOLUTAMENTE sicuro di voler eliminare l'utente ${u.firstName} (${u.email})? Tutti i suoi trade, report e analisi verranno distrutti irreversibilmente.`)) {
+                                          deleteUserMutation.mutate(u.id);
+                                        }
+                                      }}
+                                      disabled={deleteUserMutation.isPending}
+                                      title="Elimina Utente"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
                                 </div>
                               )}
                             </TableCell>

@@ -750,7 +750,7 @@ export async function registerRoutes(
   });
 
   // Delete user account and ALL their data
-  app.delete("/api/admin/users/:id", isAuthenticated, isAdmin, async (req, res) => {
+  app.delete("/api/admin/users/:id", isAuthenticated, isSuperAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const targetUser = await storage.getUser(id);
@@ -761,10 +761,6 @@ export async function registerRoutes(
 
       if (targetUser.role === "super_admin") {
         return res.status(403).json({ message: "Impossibile eliminare un super admin" });
-      }
-
-      if (targetUser.role === "admin" && req.user!.role !== "super_admin") {
-        return res.status(403).json({ message: "Solo un super admin può eliminare un admin" });
       }
 
       await storage.deleteUserAndData(id);
