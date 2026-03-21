@@ -37,6 +37,19 @@ pool.query(`
     updated_at TIMESTAMP DEFAULT NOW()
   );
   ALTER TABLE trades ADD COLUMN IF NOT EXISTS strategy_id INTEGER REFERENCES strategies(id);
+
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan VARCHAR DEFAULT 'free';
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP;
+
+  CREATE TABLE IF NOT EXISTS "aiAnalyses" (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR NOT NULL REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT NOW(),
+    trade_count_at_analysis INTEGER NOT NULL,
+    analysis_data JSONB NOT NULL,
+    token_usage INTEGER,
+    model VARCHAR
+  );
   COMMIT;
 `).then(() => {
   console.log("Database schema auto-patch verified successfully.");
