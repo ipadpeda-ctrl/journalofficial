@@ -790,7 +790,7 @@ export async function registerRoutes(
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model: "claude-3-haiku-20240307", max_tokens: 10, messages: [{ role: "user", content: "Test di connessione. Rispondi 'OK'" }] })
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 10, messages: [{ role: "user", content: "Test di connessione. Rispondi 'OK'" }] })
       });
       
       const payload = await response.text();
