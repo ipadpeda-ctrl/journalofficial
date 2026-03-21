@@ -1,5 +1,21 @@
 import { type Trade } from "@shared/schema";
 
+// ─── Result normalization (mirrors client/src/lib/tradeStatsUtils.ts) ───
+// DB stores: "target", "parziale", "stop_loss", "breakeven", "non_fillato"
+
+function isWin(t: Trade): boolean {
+  return t.result === "target" || t.result === "parziale";
+}
+
+function isLoss(t: Trade): boolean {
+  return t.result === "stop_loss";
+}
+
+/** Filter out non_fillato trades — they never entered the market */
+function getStatisticalTrades(trades: Trade[]): Trade[] {
+  return trades.filter(t => t.result !== "non_fillato");
+}
+
 export interface AggregatedTradeData {
   totalTrades: number;
   wins: number;
@@ -22,14 +38,17 @@ export interface AggregatedTradeData {
   strategyStats: { strategyName: string; totalTrades: number; wins: number; losses: number; winRate: number }[];
 }
 
-export function aggregateTradeData(trades: Trade[], strategies?: { id: number; name: string }[]): AggregatedTradeData {
+export function aggregateTradeData(rawTrades: Trade[], strategies?: { id: number; name: string }[]): AggregatedTradeData {
+  // Exclude non_fillato — they never entered the market
+  const trades = getStatisticalTrades(rawTrades);
+
   if (!trades.length) {
     throw new Error("No trades to aggregate");
   }
 
   const resultStats = trades.reduce((acc, t) => {
-    if (t.result === "win") acc.wins++;
-    else if (t.result === "loss") acc.losses++;
+    if (isWin(t)) acc.wins++;
+    else if (isLoss(t)) acc.losses++;
     else acc.breakevens++;
     return acc;
   }, { wins: 0, losses: 0, breakevens: 0 });
@@ -110,16 +129,16 @@ export function aggregateTradeData(trades: Trade[], strategies?: { id: number; n
     
     // Streaks & Behavior
     if (lossCount >= 2) {
-      if (t.result === "win") afterLossesLog.wins++;
-      else if (t.result === "loss") afterLossesLog.losses++;
+      if (isWin(t)) afterLossesLog.wins++;
+      else if (isLoss(t)) afterLossesLog.losses++;
     }
     
-    if (t.result === "win") {
+    if (isWin(t)) {
       currentWin++;
       longestWin = Math.max(longestWin, currentWin);
       currentLoss = 0;
       lossCount = 0;
-    } else if (t.result === "loss") {
+    } else if (isLoss(t)) {
       currentLoss++;
       longestLoss = Math.max(longestLoss, currentLoss);
       currentWin = 0;
@@ -133,8 +152,8 @@ export function aggregateTradeData(trades: Trade[], strategies?: { id: number; n
     // Hold time
     if (t.time && t.closeTime) {
       const mins = getHoldMinutes(t.time, t.closeTime);
-      if (t.result === "win") winHoldTimes.push(mins);
-      else if (t.result === "loss") lossHoldTimes.push(mins);
+      if (isWin(t)) winHoldTimes.push(mins);
+      else if (isLoss(t)) lossHoldTimes.push(mins);
     }
     
     // Confluences Pro
@@ -143,16 +162,16 @@ export function aggregateTradeData(trades: Trade[], strategies?: { id: number; n
       if (t.confluencesPro.length > 1) {
         const entry = comboMap.get(combo) || { total: 0, wins: 0, losses: 0 };
         entry.total++;
-        if (t.result === "win") entry.wins++;
-        if (t.result === "loss") entry.losses++;
+        if (isWin(t)) entry.wins++;
+        if (isLoss(t)) entry.losses++;
         comboMap.set(combo, entry);
       }
       
       for (const conf of t.confluencesPro) {
         const entry = proConfMap.get(conf) || { total: 0, wins: 0, losses: 0, pnl: 0, rr: 0 };
         entry.total++;
-        if (t.result === "win") entry.wins++;
-        if (t.result === "loss") entry.losses++;
+        if (isWin(t)) entry.wins++;
+        if (isLoss(t)) entry.losses++;
         if (t.pnl) entry.pnl += t.pnl;
         if (t.rr) entry.rr += t.rr;
         proConfMap.set(conf, entry);
@@ -164,7 +183,7 @@ export function aggregateTradeData(trades: Trade[], strategies?: { id: number; n
       for (const conf of t.confluencesContro) {
         const entry = controMap.get(conf) || { total: 0, losses: 0 };
         entry.total++;
-        if (t.result === "loss") entry.losses++;
+        if (isLoss(t)) entry.losses++;
         controMap.set(conf, entry);
       }
     }
@@ -172,8 +191,8 @@ export function aggregateTradeData(trades: Trade[], strategies?: { id: number; n
     // Pairs
     const pEntry = pairMap.get(t.pair) || { total: 0, wins: 0, losses: 0, pnl: 0, rr: 0, rrCount: 0 };
     pEntry.total++;
-    if (t.result === "win") pEntry.wins++;
-    if (t.result === "loss") pEntry.losses++;
+    if (isWin(t)) pEntry.wins++;
+    if (isLoss(t)) pEntry.losses++;
     if (t.pnl) pEntry.pnl += t.pnl;
     if (t.rr != null) { pEntry.rr += t.rr; pEntry.rrCount++; }
     pairMap.set(t.pair, pEntry);
@@ -187,8 +206,8 @@ export function aggregateTradeData(trades: Trade[], strategies?: { id: number; n
       const k = `${day}||${hourBlock}`;
       const te = timeMap.get(k) || { total: 0, wins: 0, losses: 0 };
       te.total++;
-      if (t.result === "win") te.wins++;
-      if (t.result === "loss") te.losses++;
+      if (isWin(t)) te.wins++;
+      if (isLoss(t)) te.losses++;
       timeMap.set(k, te);
     }
     
@@ -197,8 +216,8 @@ export function aggregateTradeData(trades: Trade[], strategies?: { id: number; n
       for (const b of t.barrier) {
         const be = barrierMap.get(b) || { total: 0, wins: 0, losses: 0 };
         be.total++;
-        if (t.result === "win") be.wins++;
-        if (t.result === "loss") be.losses++;
+        if (isWin(t)) be.wins++;
+        if (isLoss(t)) be.losses++;
         barrierMap.set(b, be);
       }
     }
@@ -207,8 +226,8 @@ export function aggregateTradeData(trades: Trade[], strategies?: { id: number; n
     if (t.emotion) {
       const ee = emotionMap.get(t.emotion) || { total: 0, wins: 0, losses: 0 };
       ee.total++;
-      if (t.result === "win") ee.wins++;
-      if (t.result === "loss") ee.losses++;
+      if (isWin(t)) ee.wins++;
+      if (isLoss(t)) ee.losses++;
       emotionMap.set(t.emotion, ee);
     }
     
@@ -218,8 +237,8 @@ export function aggregateTradeData(trades: Trade[], strategies?: { id: number; n
       if (strat) {
         const entry = strategyMap.get(t.strategyId) || { name: strat.name, total: 0, wins: 0, losses: 0 };
         entry.total++;
-        if (t.result === "win") entry.wins++;
-        if (t.result === "loss") entry.losses++;
+        if (isWin(t)) entry.wins++;
+        if (isLoss(t)) entry.losses++;
         strategyMap.set(t.strategyId, entry);
       }
     }
