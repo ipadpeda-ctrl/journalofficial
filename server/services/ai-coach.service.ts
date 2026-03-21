@@ -131,21 +131,35 @@ Rispondi ESCLUSIVAMENTE con un JSON valido strutturato esattamente come illustra
 
   const modelName = "claude-sonnet-4-6";
   
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: modelName,
-      max_tokens: 4000,
-      temperature: 0.1, // Low temp for more statistical rigidity and adherence to JSON format
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+  
+  let response;
+  try {
+    response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: modelName,
+        max_tokens: 4000,
+        temperature: 0.1, // Low temp for more statistical rigidity and adherence to JSON format
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      }),
+    });
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      throw new Error("Il servizio AI ha impiegato troppo tempo a rispondere (Timeout 60s). Riprova più tardi.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     const errorBody = await response.text();

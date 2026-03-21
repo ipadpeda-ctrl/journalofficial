@@ -688,6 +688,12 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Piano non valido" });
       }
 
+      // Prevent normal admins from changing super_admin plan
+      const targetUser = await storage.getUser(id);
+      if (targetUser?.role === "super_admin" && req.user!.role !== "super_admin") {
+        return res.status(403).json({ message: "Non puoi modificare il piano del super admin" });
+      }
+
       let expiresAt: Date | null = null;
       if (plan === "annual") {
         expiresAt = new Date();
@@ -739,9 +745,11 @@ export async function registerRoutes(
       const emailSent = await sendAdminResetPasswordEmail(targetUser.email, tempPassword, baseUrl);
 
       if (emailSent) {
-        res.json({ message: `Password resettata: ${tempPassword} — Email di notifica inviata all'utente.` });
+        res.json({ message: "Password resettata e inviata via email all'utente." });
       } else {
-        res.json({ message: `Password resettata: ${tempPassword} — Comunicala all'utente in modo sicuro (email non configurata).` });
+        // Fallback without exposing plaintext to network if not strictly debugging
+        console.log(`[ADMIN ACTION] Fallback Temp password for ${targetUser.email} is: ${tempPassword}`);
+        res.json({ message: "Password resettata. L'email non è configurata, la nuova password è visibile nei server log." });
       }
     } catch (error) {
       console.error("Error resetting user password:", error);
@@ -834,6 +842,10 @@ export async function registerRoutes(
   const aiCoachLimiter = rateLimit({
     windowMs: 30 * 1000, // 30 seconds
     max: 1,
+    keyGenerator: (req) => {
+      // Use user id if authenticated, fallback to IP (fixes same-IP blockage)
+      return (req as any).user?.id || req.ip;
+    },
     message: { message: "Attendi 30 secondi prima di inviare un'altra richiesta." },
   });
 
@@ -869,7 +881,11 @@ export async function registerRoutes(
         tradesNeeded,
         tradesSinceLastAnalysis,
         hoursRemaining,
-        previousAnalyses: previousAnalyses.map(a => ({ id: a.id, createdAt: a.createdAt, overallScore: (a.analysisData as any).overallScore }))
+        previousAnalyses: previousAnalyses.map(a => ({ 
+          id: a.id, 
+          createdAt: a.createdAt, 
+          overallScore: (a.analysisData as any)?.overallScore ?? null 
+        }))
       });
     } catch (error) {
       console.error("Error fetching AI status:", error);
@@ -897,11 +913,12 @@ export async function registerRoutes(
       }
 
       const trades = await storage.getTradesByUser(userId, 99999, 0);
-      if (trades.length < 5) {
-        return res.status(400).json({ message: "Registra almeno 5 trade totali per avere statistiche sensate." });
+      if (trades.length < 10) {
+        return res.status(400).json({ message: "Registra almeno 10 trade totali per attivare l'AI Coach" });
       }
 
-      const aggregatedData = aggregateTradeData(trades);
+      const strategies = await storage.getStrategiesByUser(userId);
+      const aggregatedData = aggregateTradeData(trades, strategies.map(s => ({ id: s.id, name: s.name })));
       const aiResult = await generateAICoachAnalysis(userId, aggregatedData);
 
       const analysis = await storage.createAiAnalysis({

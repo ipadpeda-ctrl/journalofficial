@@ -22,7 +22,7 @@ export interface AggregatedTradeData {
   strategyStats: { strategyName: string; totalTrades: number; wins: number; losses: number; winRate: number }[];
 }
 
-export function aggregateTradeData(trades: Trade[]): AggregatedTradeData {
+export function aggregateTradeData(trades: Trade[], strategies?: { id: number; name: string }[]): AggregatedTradeData {
   if (!trades.length) {
     throw new Error("No trades to aggregate");
   }
@@ -60,6 +60,9 @@ export function aggregateTradeData(trades: Trade[]): AggregatedTradeData {
   // Emotions
   const emotionMap = new Map<string, { total: number, wins: number, losses: number }>();
   
+  // Strategies
+  const strategyMap = new Map<number, { name: string, total: number, wins: number, losses: number }>();
+  
   // Streak
   let longestWin = 0;
   let longestLoss = 0;
@@ -86,7 +89,9 @@ export function aggregateTradeData(trades: Trade[]): AggregatedTradeData {
   };
 
   const getDayOfWeek = (dateStr: string) => {
-    const d = new Date(dateStr);
+    // Parse manually to avoid UTC midnight timezone offset bugs
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
     const days = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
     return days[d.getDay()];
   };
@@ -206,6 +211,18 @@ export function aggregateTradeData(trades: Trade[]): AggregatedTradeData {
       if (t.result === "loss") ee.losses++;
       emotionMap.set(t.emotion, ee);
     }
+    
+    // Strategy mapping
+    if (t.strategyId && strategies) {
+      const strat = strategies.find(s => s.id === t.strategyId);
+      if (strat) {
+        const entry = strategyMap.get(t.strategyId) || { name: strat.name, total: 0, wins: 0, losses: 0 };
+        entry.total++;
+        if (t.result === "win") entry.wins++;
+        if (t.result === "loss") entry.losses++;
+        strategyMap.set(t.strategyId, entry);
+      }
+    }
   }
 
   const mapToStats = <T extends any>(m: Map<string, T>, namer: (k: string, v: T) => any) => 
@@ -310,6 +327,12 @@ export function aggregateTradeData(trades: Trade[]): AggregatedTradeData {
       pnl: t.pnl || null,
       emotion: t.emotion || null
     })),
-    strategyStats: [], // Needs strategy names mapped, skip for now to save tokens assuming minimal edge cases
+    strategyStats: Array.from(strategyMap.values()).map(v => ({
+      strategyName: v.name,
+      totalTrades: v.total,
+      wins: v.wins,
+      losses: v.losses,
+      winRate: v.total > 0 ? (v.wins / (v.wins + v.losses)) * 100 || 0 : 0
+    })).sort((a,b) => b.totalTrades - a.totalTrades),
   };
 }
