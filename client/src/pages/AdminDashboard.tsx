@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Users, TrendingUp, BarChart3, ArrowUp, ArrowDown, Shield, ShieldCheck, User as UserIcon, Trophy, Medal, Award, CheckCircle2, XCircle, Clock, AlertTriangle, Filter, KeyRound } from "lucide-react";
+import { Loader2, Users, TrendingUp, BarChart3, ArrowUp, ArrowDown, Shield, ShieldCheck, User as UserIcon, Trophy, Medal, Award, CheckCircle2, XCircle, Clock, AlertTriangle, Filter, KeyRound, Trash2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -95,6 +95,17 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({ title: "Piano aggiornato", description: "L'abbonamento dell'utente è stato modificato con successo." });
     },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => apiRequest("DELETE", `/api/admin/users/${userId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "Utente eliminato", description: "L'utente e i suoi dati sono stati rimossi in modo definitivo." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Errore di eliminazione", description: error.message || "Impossibile eliminare l'utente", variant: "destructive" });
+    }
   });
 
   const resetPasswordMutation = useMutation({
@@ -343,6 +354,19 @@ export default function AdminDashboard() {
                                     title="Resetta Password"
                                   >
                                     <KeyRound className="w-4 h-4 text-muted-foreground" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => {
+                                      if (confirm(`Sei ASSOLUTAMENTE sicuro di voler eliminare l'utente ${u.firstName} (${u.email})? Tutti i suoi trade, report e analisi verranno distrutti irreversibilmente.`)) {
+                                        deleteUserMutation.mutate(u.id);
+                                      }
+                                    }}
+                                    disabled={deleteUserMutation.isPending}
+                                    title="Elimina Utente"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </div>
                               )}

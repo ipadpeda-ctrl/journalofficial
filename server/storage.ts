@@ -30,6 +30,7 @@ export interface IStorage {
   createUser(user: UpsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  deleteUserAndData(id: string): Promise<void>;
   updateUserRole(id: string, role: string): Promise<User | undefined>;
   updateUserApproval(id: string, isApproved: string): Promise<User | undefined>;
   updateUserSubscriptionPlan(id: string, plan: string, expiresAt?: Date | null): Promise<User | undefined>;
@@ -132,6 +133,15 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async deleteUserAndData(id: string): Promise<void> {
+    await db.delete(trades).where(eq(trades.userId, id));
+    await db.delete(tradingDiary).where(eq(tradingDiary.userId, id));
+    await db.delete(goals).where(eq(goals.userId, id));
+    await db.delete(strategies).where(eq(strategies.userId, id));
+    await db.delete(aiAnalyses).where(eq(aiAnalyses.userId, id));
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async updateUserRole(id: string, role: string): Promise<User | undefined> {

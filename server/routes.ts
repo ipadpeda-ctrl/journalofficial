@@ -749,11 +749,45 @@ export async function registerRoutes(
     }
   });
 
+  // Delete user account and ALL their data
+  app.delete("/api/admin/users/:id", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const targetUser = await storage.getUser(id);
+
+      if (!targetUser) {
+        return res.status(404).json({ message: "Utente non trovato" });
+      }
+
+      if (targetUser.role === "super_admin") {
+        return res.status(403).json({ message: "Impossibile eliminare un super admin" });
+      }
+
+      if (targetUser.role === "admin" && req.user!.role !== "super_admin") {
+        return res.status(403).json({ message: "Solo un super admin può eliminare un admin" });
+      }
+
+      await storage.deleteUserAndData(id);
+      res.json({ message: "Utente e dati eliminati con successo" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Errore durante l'eliminazione dell'utente" });
+    }
+  });
+
   // ============== AI COACH ROUTES ==============
 
   const isProUser: RequestHandler = async (req, res, next) => {
     try {
-      const user = await storage.getUser(req.user!.id);
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Non autenticato" });
+      }
+
+      if (req.user.role === "super_admin") {
+        return next();
+      }
+
+      const user = await storage.getUser(req.user.id);
       if (!user || user.subscriptionPlan !== "annual") {
         return res.status(403).json({ message: "Funzionalità riservata ai membri Pro" });
       }
