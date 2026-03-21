@@ -14,3 +14,5 @@ services:
         generateValue: true
       - key: REPLIT_DEPLOYMENT
         value: "1"
+      - key: ANTHROPIC_API_KEY
+        sync: false
