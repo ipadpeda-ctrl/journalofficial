@@ -129,7 +129,7 @@ Rispondi ESCLUSIVAMENTE con un JSON valido strutturato esattamente come illustra
 }
 `;
 
-  const modelName = "claude-3-5-sonnet-20241022";
+  const modelName = "claude-3-5-sonnet-20240620";
   
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
