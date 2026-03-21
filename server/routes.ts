@@ -779,14 +779,24 @@ export async function registerRoutes(
         return res.json({ error: "Nessuna chiave rilevata in process.env.ANTHROPIC_API_KEY dal server Node" });
       }
 
+      // Try fetching available models first
+      const modelsResponse = await fetch("https://api.anthropic.com/v1/models", {
+        method: "GET",
+        headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+      });
+      
+      const modelsPayload = await modelsResponse.text();
+
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model: "claude-3-5-sonnet-20240620", max_tokens: 10, messages: [{ role: "user", content: "Test di connessione. Rispondi 'OK'" }] })
+        body: JSON.stringify({ model: "claude-3-haiku-20240307", max_tokens: 10, messages: [{ role: "user", content: "Test di connessione. Rispondi 'OK'" }] })
       });
       
       const payload = await response.text();
       res.json({ 
+        modelsStatus: modelsResponse.status,
+        availableModels: modelsPayload,
         httpStatus: response.status, 
         anthropicResponse: payload, 
         keyValidation: { length: apiKey.length, prefix: apiKey.substring(0, 10) + "..." }
