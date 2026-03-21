@@ -23,7 +23,7 @@ interface AICoachProps {
 
 export default function AICoach({ trades }: AICoachProps) {
   const { user } = useAuth();
-  const isPro = user?.subscriptionPlan === "annual";
+  const isPro = user?.subscriptionPlan === "annual" || user?.role === "super_admin";
 
   const [activeAnalysisId, setActiveAnalysisId] = useState<number | null>(null);
 
