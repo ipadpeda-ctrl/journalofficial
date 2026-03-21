@@ -838,7 +838,8 @@ export async function registerRoutes(
         }
       }
 
-      const canRequest = hoursRemaining === 0 && tradesSinceLastAnalysis >= 10;
+      const isSuperAdminUser = req.user!.role === "super_admin";
+      const canRequest = isSuperAdminUser || (hoursRemaining === 0 && tradesSinceLastAnalysis >= 10);
       const previousAnalyses = await storage.getAiAnalysesByUser(userId);
 
       res.json({
@@ -866,12 +867,14 @@ export async function registerRoutes(
       const lastAnalysis = await storage.getLatestAiAnalysis(userId);
       const totalTradesCount = await storage.getTradeCountByUser(userId);
 
+      const isSuperAdminUser = req.user!.role === "super_admin";
+
       const tradesSinceLastAnalysis = lastAnalysis ? totalTradesCount - lastAnalysis.tradeCountAtAnalysis : totalTradesCount;
-      if (tradesSinceLastAnalysis < 10) {
+      if (!isSuperAdminUser && tradesSinceLastAnalysis < 10) {
         return res.status(400).json({ message: "Registra almeno 10 trade dall'ultima analisi per attivare l'AI Coach" });
       }
 
-      if (lastAnalysis) {
+      if (!isSuperAdminUser && lastAnalysis) {
         const _48h = 48 * 60 * 60 * 1000;
         const timePassed = Date.now() - new Date(lastAnalysis.createdAt).getTime();
         if (timePassed < _48h) {
@@ -880,7 +883,7 @@ export async function registerRoutes(
       }
 
       const trades = await storage.getTradesByUser(userId, 99999, 0);
-      if (trades.length < 10) {
+      if (!isSuperAdminUser && trades.length < 10) {
         return res.status(400).json({ message: "Registra almeno 10 trade totali per attivare l'AI Coach" });
       }
 
