@@ -129,10 +129,10 @@ Rispondi ESCLUSIVAMENTE con un JSON valido strutturato esattamente come illustra
 }
 `;
 
-  const modelName = "claude-sonnet-4-6";
+  const modelName = "claude-sonnet-4-20250514";
   
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+  const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout
   
   let response;
   try {
@@ -154,7 +154,7 @@ Rispondi ESCLUSIVAMENTE con un JSON valido strutturato esattamente come illustra
     });
   } catch (error: any) {
     if (error.name === "AbortError") {
-      throw new Error("Il servizio AI ha impiegato troppo tempo a rispondere (Timeout 60s). Riprova più tardi.");
+      throw new Error("Il servizio AI ha impiegato troppo tempo a rispondere (Timeout 120s). Riprova più tardi.");
     }
     throw error;
   } finally {

@@ -180,7 +180,7 @@ export const aiAnalyses = pgTable("ai_analyses", {
   analysisData: jsonb("analysis_data").notNull(),
   promptTokensUsed: integer("prompt_tokens_used"),
   completionTokensUsed: integer("completion_tokens_used"),
-  model: text("model").default("claude-3-5-sonnet-latest"),
+  model: text("model").default("claude-sonnet-4-20250514"),
 });
 
 export const insertAiAnalysisSchema = createInsertSchema(aiAnalyses).omit({
