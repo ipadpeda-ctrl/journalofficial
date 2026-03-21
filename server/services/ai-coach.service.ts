@@ -146,7 +146,7 @@ Rispondi ESCLUSIVAMENTE con un JSON valido strutturato esattamente come illustra
       },
       body: JSON.stringify({
         model: modelName,
-        max_tokens: 4000,
+        max_tokens: 8192,
         temperature: 0.1, // Low temp for more statistical rigidity and adherence to JSON format
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
@@ -172,6 +172,12 @@ Rispondi ESCLUSIVAMENTE con un JSON valido strutturato esattamente come illustra
 
   if (!rawContent) {
     throw new Error("Risposta Anthropic vuota o malformata");
+  }
+
+  // Detect truncated response (stop_reason === "max_tokens" means output was cut off)
+  if (data.stop_reason === "max_tokens") {
+    console.error("AI Coach response truncated (max_tokens reached). Output tokens:", data.usage?.output_tokens);
+    throw new Error("L'analisi AI è troppo lunga ed è stata troncata. Riprova tra qualche minuto.");
   }
 
   // Clean markdown block if Claude wrapped the JSON
