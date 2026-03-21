@@ -44,6 +44,8 @@ export const users = pgTable("users", {
   barrierOptions: text("barrier_options").array(),
   isBarrierEnabled: boolean("is_barrier_enabled").default(true),
   hasCompletedTutorial: boolean("has_completed_tutorial").default(false),
+  subscriptionPlan: varchar("subscription_plan").default("free"),
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
   resetToken: varchar("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -168,3 +170,23 @@ export const insertGoalSchema = createInsertSchema(goals).omit({
 
 export type InsertGoal = z.infer<typeof insertGoalSchema>;
 export type Goal = typeof goals.$inferSelect;
+
+// AI Analyses table for AI Coach feature
+export const aiAnalyses = pgTable("ai_analyses", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  tradeCountAtAnalysis: integer("trade_count_at_analysis").notNull(),
+  analysisData: jsonb("analysis_data").notNull(),
+  promptTokensUsed: integer("prompt_tokens_used"),
+  completionTokensUsed: integer("completion_tokens_used"),
+  model: text("model").default("claude-3-5-sonnet-latest"),
+});
+
+export const insertAiAnalysisSchema = createInsertSchema(aiAnalyses).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAiAnalysis = z.infer<typeof insertAiAnalysisSchema>;
+export type AiAnalysis = typeof aiAnalyses.$inferSelect;

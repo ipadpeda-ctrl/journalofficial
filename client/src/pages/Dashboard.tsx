@@ -19,6 +19,7 @@ import MonthlyComparison from "@/components/MonthlyComparison";
 import TradingDiary from "@/components/TradingDiary";
 import MonthlyGoals from "@/components/MonthlyGoals";
 import OnboardingTour from "@/components/OnboardingTour";
+import AICoach from "@/pages/AICoach";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ export default function Dashboard() {
     if (path === "/diary") return "diary";
     if (path === "/goals") return "goals";
     if (path === "/settings") return "settings";
+    if (path === "/ai-coach") return "aicoach";
     return "new-entry";
   };
 
@@ -103,6 +105,7 @@ export default function Dashboard() {
       case "diary": setLocation("/diary"); break;
       case "goals": setLocation("/goals"); break;
       case "settings": setLocation("/settings"); break;
+      case "aicoach": setLocation("/ai-coach"); break;
       default: setLocation("/"); break;
     }
   };
@@ -351,6 +354,7 @@ export default function Dashboard() {
         />}
         {activeTab === "diary" && <TradingDiary />}
         {activeTab === "goals" && <MonthlyGoals trades={trades} initialCapital={initialCapital} />}
+        {activeTab === "aicoach" && <AICoach trades={filteredTrades} />}
       </main>
     </div>
   );

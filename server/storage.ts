@@ -4,6 +4,7 @@ import {
   tradingDiary,
   goals,
   strategies,
+  aiAnalyses,
   type User,
   type UpsertUser,
   type Trade,
@@ -14,6 +15,8 @@ import {
   type InsertGoal,
   type Strategy,
   type InsertStrategy,
+  type AiAnalysis,
+  type InsertAiAnalysis,
 } from "@shared/schema";
 import { db } from "./db";
 import { pool } from "./db";
@@ -29,6 +32,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUserRole(id: string, role: string): Promise<User | undefined>;
   updateUserApproval(id: string, isApproved: string): Promise<User | undefined>;
+  updateUserSubscriptionPlan(id: string, plan: string, expiresAt?: Date | null): Promise<User | undefined>;
   updateUserCapital(id: string, capital: number): Promise<User | undefined>;
   updateUserSettings(id: string, settings: { pairs?: string[], emotions?: string[], confluencesPro?: string[], confluencesContro?: string[], barrierOptions?: string[], isBarrierEnabled?: boolean }): Promise<User | undefined>;
   updateUserPassword(id: string, passwordHash: string): Promise<User | undefined>;
@@ -64,6 +68,13 @@ export interface IStorage {
   createStrategy(strategy: InsertStrategy): Promise<Strategy>;
   updateStrategy(id: number, userId: string, data: Partial<InsertStrategy>): Promise<Strategy | undefined>;
   deleteStrategy(id: number, userId: string): Promise<boolean>;
+
+  // AI Coach operations
+  getAiAnalysesByUser(userId: string): Promise<AiAnalysis[]>;
+  getLatestAiAnalysis(userId: string): Promise<AiAnalysis | undefined>;
+  createAiAnalysis(data: InsertAiAnalysis): Promise<AiAnalysis>;
+  getAiAnalysisById(id: number, userId: string): Promise<AiAnalysis | undefined>;
+  getTradeCountByUser(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -136,6 +147,19 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ isApproved, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async updateUserSubscriptionPlan(id: string, plan: string, expiresAt?: Date | null): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        subscriptionPlan: plan, 
+        subscriptionExpiresAt: expiresAt || null,
+        updatedAt: new Date() 
+      })
       .where(eq(users.id, id))
       .returning();
     return user;
@@ -412,6 +436,46 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(strategies.id, id), eq(strategies.userId, userId)))
       .returning();
     return result.length > 0;
+  }
+
+  // AI Coach operations
+  async getAiAnalysesByUser(userId: string): Promise<AiAnalysis[]> {
+    return await db
+      .select()
+      .from(aiAnalyses)
+      .where(eq(aiAnalyses.userId, userId))
+      .orderBy(desc(aiAnalyses.createdAt));
+  }
+
+  async getLatestAiAnalysis(userId: string): Promise<AiAnalysis | undefined> {
+    const [analysis] = await db
+      .select()
+      .from(aiAnalyses)
+      .where(eq(aiAnalyses.userId, userId))
+      .orderBy(desc(aiAnalyses.createdAt))
+      .limit(1);
+    return analysis;
+  }
+
+  async createAiAnalysis(data: InsertAiAnalysis): Promise<AiAnalysis> {
+    const [analysis] = await db.insert(aiAnalyses).values(data).returning();
+    return analysis;
+  }
+
+  async getAiAnalysisById(id: number, userId: string): Promise<AiAnalysis | undefined> {
+    const [analysis] = await db
+      .select()
+      .from(aiAnalyses)
+      .where(and(eq(aiAnalyses.id, id), eq(aiAnalyses.userId, userId)));
+    return analysis;
+  }
+
+  async getTradeCountByUser(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(trades)
+      .where(eq(trades.userId, userId));
+    return Number(result[0].count);
   }
 }
 

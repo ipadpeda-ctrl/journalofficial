@@ -89,6 +89,14 @@ export default function AdminDashboard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] }),
   });
 
+  const updatePlanMutation = useMutation({
+    mutationFn: async ({ userId, plan }: { userId: string; plan: string }) => apiRequest("PATCH", `/api/admin/users/${userId}/plan`, { plan }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "Piano aggiornato", description: "L'abbonamento dell'utente è stato modificato con successo." });
+    },
+  });
+
   const resetPasswordMutation = useMutation({
     mutationFn: async (userId: string) => {
       const res = await apiRequest("POST", `/api/admin/users/${userId}/reset-password`);
@@ -313,6 +321,16 @@ export default function AdminDashboard() {
                                   {isSuperAdmin && (
                                     <Select value={u.role} onValueChange={(val) => updateRoleMutation.mutate({ userId: u.id, role: val })} disabled={updateRoleMutation.isPending}><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="user">User</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent></Select>
                                   )}
+                                  <Select value={u.subscriptionPlan || "free"} onValueChange={(val) => updatePlanMutation.mutate({ userId: u.id, plan: val })} disabled={updatePlanMutation.isPending}>
+                                    <SelectTrigger className="w-28 bg-amber-500/10 text-amber-600 border-amber-500/30">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="free">Free</SelectItem>
+                                      <SelectItem value="monthly">Mensile</SelectItem>
+                                      <SelectItem value="annual">Annuale</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                   <Button
                                     size="sm"
                                     variant="outline"

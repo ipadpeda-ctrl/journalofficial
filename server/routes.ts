@@ -9,6 +9,8 @@ import { setupLocalAuth, isAuthenticated, isAdmin, isSuperAdmin, hashPassword } 
 import { insertTradeSchema, insertDiarySchema, insertGoalSchema, registerUserSchema, loginUserSchema } from "@shared/schema";
 import { sendPasswordResetEmail, sendAdminResetPasswordEmail } from "./email";
 import rateLimit from "express-rate-limit";
+import { aggregateTradeData } from "./services/trade-aggregator";
+import { generateAICoachAnalysis } from "./services/ai-coach.service";
 
 // Zod schema per validazione impostazioni utente
 const updateUserSettingsSchema = z.object({
@@ -676,6 +678,37 @@ export async function registerRoutes(
     }
   });
 
+  // Update user subscription plan (admin only)
+  app.patch("/api/admin/users/:id/plan", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { plan } = req.body;
+
+      if (!["free", "monthly", "annual"].includes(plan)) {
+        return res.status(400).json({ message: "Piano non valido" });
+      }
+
+      let expiresAt: Date | null = null;
+      if (plan === "annual") {
+        expiresAt = new Date();
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      } else if (plan === "monthly") {
+        expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
+      }
+
+      const user = await storage.updateUserSubscriptionPlan(id, plan, expiresAt);
+      if (!user) {
+        return res.status(404).json({ message: "Utente non trovato" });
+      }
+      const { passwordHash, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error updating user plan:", error);
+      res.status(500).json({ message: "Errore nell'aggiornamento del piano" });
+    }
+  });
+
   // Reset user password (admin only)
   app.post("/api/admin/users/:id/reset-password", isAuthenticated, isAdmin, async (req, res) => {
     try {
@@ -713,6 +746,130 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error resetting user password:", error);
       res.status(500).json({ message: "Errore nel reset della password" });
+    }
+  });
+
+  // ============== AI COACH ROUTES ==============
+
+  const isProUser: RequestHandler = async (req, res, next) => {
+    try {
+      const user = await storage.getUser(req.user!.id);
+      if (!user || user.subscriptionPlan !== "annual") {
+        return res.status(403).json({ message: "Funzionalità riservata ai membri Pro" });
+      }
+      if (user.subscriptionExpiresAt && new Date() > user.subscriptionExpiresAt) {
+        return res.status(403).json({ message: "Il tuo abbonamento Pro è scaduto" });
+      }
+      next();
+    } catch (err) {
+      res.status(500).json({ message: "Errore verifica abbonamento" });
+    }
+  };
+
+  const aiCoachLimiter = rateLimit({
+    windowMs: 30 * 1000, // 30 seconds
+    max: 1,
+    message: { message: "Attendi 30 secondi prima di inviare un'altra richiesta." },
+  });
+
+  app.get("/api/ai-coach/status", isAuthenticated, isProUser, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const lastAnalysis = await storage.getLatestAiAnalysis(userId);
+      const totalTrades = await storage.getTradeCountByUser(userId);
+
+      const tradesSinceLastAnalysis = lastAnalysis ? totalTrades - lastAnalysis.tradeCountAtAnalysis : totalTrades;
+      const tradesNeeded = Math.max(0, 10 - tradesSinceLastAnalysis);
+
+      let hoursRemaining = 0;
+      let nextAvailableDate = null;
+
+      if (lastAnalysis) {
+        const _48h = 48 * 60 * 60 * 1000;
+        const timePassed = Date.now() - new Date(lastAnalysis.createdAt).getTime();
+        
+        if (timePassed < _48h) {
+          hoursRemaining = (_48h - timePassed) / (1000 * 60 * 60);
+          nextAvailableDate = new Date(new Date(lastAnalysis.createdAt).getTime() + _48h).toISOString();
+        }
+      }
+
+      const canRequest = hoursRemaining === 0 && tradesSinceLastAnalysis >= 10;
+      const previousAnalyses = await storage.getAiAnalysesByUser(userId);
+
+      res.json({
+        canRequest,
+        lastAnalysisDate: lastAnalysis ? lastAnalysis.createdAt : null,
+        nextAvailableDate: hoursRemaining > 0 ? nextAvailableDate : null,
+        tradesNeeded,
+        tradesSinceLastAnalysis,
+        hoursRemaining,
+        previousAnalyses: previousAnalyses.map(a => ({ id: a.id, createdAt: a.createdAt, overallScore: (a.analysisData as any).overallScore }))
+      });
+    } catch (error) {
+      console.error("Error fetching AI status:", error);
+      res.status(500).json({ message: "Errore nel recupero dello stato AI Coach" });
+    }
+  });
+
+  app.post("/api/ai-coach/analyze", isAuthenticated, isProUser, aiCoachLimiter, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const lastAnalysis = await storage.getLatestAiAnalysis(userId);
+      const totalTradesCount = await storage.getTradeCountByUser(userId);
+
+      const tradesSinceLastAnalysis = lastAnalysis ? totalTradesCount - lastAnalysis.tradeCountAtAnalysis : totalTradesCount;
+      if (tradesSinceLastAnalysis < 10) {
+        return res.status(400).json({ message: "Registra almeno 10 trade dall'ultima analisi per attivare l'AI Coach" });
+      }
+
+      if (lastAnalysis) {
+        const _48h = 48 * 60 * 60 * 1000;
+        const timePassed = Date.now() - new Date(lastAnalysis.createdAt).getTime();
+        if (timePassed < _48h) {
+          return res.status(400).json({ message: "Devi attendere 48 ore dalla tua ultima analisi." });
+        }
+      }
+
+      const trades = await storage.getTradesByUser(userId, 99999, 0);
+      if (trades.length < 5) {
+        return res.status(400).json({ message: "Registra almeno 5 trade totali per avere statistiche sensate." });
+      }
+
+      const aggregatedData = aggregateTradeData(trades);
+      const aiResult = await generateAICoachAnalysis(userId, aggregatedData);
+
+      const analysis = await storage.createAiAnalysis({
+        userId,
+        tradeCountAtAnalysis: totalTradesCount,
+        analysisData: aiResult.rawResponse,
+        promptTokensUsed: aiResult.promptTokensUsed,
+        completionTokensUsed: aiResult.completionTokensUsed,
+        model: aiResult.model
+      });
+
+      res.json(analysis);
+    } catch (error: any) {
+      console.error("Error running AI Coach:", error);
+      res.status(503).json({ message: error.message || "Il servizio AI è temporaneamente non disponibile. Riprova tra qualche minuto." });
+    }
+  });
+
+  app.get("/api/ai-coach/:id", isAuthenticated, isProUser, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "ID non valido" });
+
+      const analysis = await storage.getAiAnalysisById(id, userId);
+      if (!analysis) {
+        return res.status(404).json({ message: "Analisi non trovata" });
+      }
+
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error fetching AI analysis:", error);
+      res.status(500).json({ message: "Errore nel recupero dell'analisi" });
     }
   });
 

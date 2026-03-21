@@ -7,13 +7,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Moon, Sun, TrendingUp, LogOut, Shield, User as UserIcon } from "lucide-react";
+import { Moon, Sun, TrendingUp, LogOut, Shield, User as UserIcon, Sparkles, Lock } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Menu } from "lucide-react";
 
-type Tab = "new-entry" | "operations" | "calendario" | "statistiche" | "diary" | "goals" | "settings" | "admin";
+type Tab = "new-entry" | "operations" | "calendario" | "statistiche" | "diary" | "goals" | "settings" | "admin" | "aicoach";
 
 interface HeaderProps {
   activeTab: Tab;
@@ -24,7 +24,9 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, isAdmin } = useAuth();
 
-  const tabs: { id: Tab; label: string; adminOnly?: boolean }[] = [
+  const isPro = user?.subscriptionPlan === "annual";
+
+  const tabs: { id: Tab; label: string; adminOnly?: boolean; isAiCoach?: boolean }[] = [
     { id: "new-entry", label: "Nuova Operazione" },
     { id: "operations", label: "Operazioni" },
     { id: "calendario", label: "Calendario" },
@@ -32,6 +34,7 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
     { id: "diary", label: "Diario" },
     { id: "goals", label: "Obiettivi" },
     { id: "settings", label: "Impostazioni" },
+    { id: "aicoach", label: "AI Coach", isAiCoach: true },
     ...(isAdmin ? [{ id: "admin" as Tab, label: "Admin", adminOnly: true }] : []),
   ];
 
@@ -53,23 +56,49 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
       </div>
 
       <nav className="hidden md:flex flex-1 items-center gap-1">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={`tutorial-step-${tab.id} px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === tab.id
+        {tabs.map((tab) => {
+          if (tab.isAiCoach) {
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onTabChange(tab.id)}
+                className={`tutorial-step-${tab.id} px-3 py-1.5 text-sm font-medium transition-all relative rounded-md border
+                  ${isPro 
+                    ? "bg-gradient-to-r from-violet-500/10 to-blue-500/10 border-violet-500/30 text-violet-700 dark:text-violet-300 hover:from-violet-500/20 hover:to-blue-500/20" 
+                    : "opacity-70 border-muted hover:bg-accent"} 
+                  ${activeTab === tab.id ? "ring-2 ring-violet-500/50" : ""}
+                `}
+                data-testid={`tab-${tab.id}`}
+              >
+                <div className="flex items-center gap-1.5">
+                  {isPro ? <Sparkles className="w-4 h-4 text-violet-500" /> : <Lock className="w-4 h-4" />}
+                  <span>{tab.label}</span>
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold tracking-wider">
+                    PRO
+                  </span>
+                </div>
+              </button>
+            );
+          }
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`tutorial-step-${tab.id} px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === tab.id
                 ? "text-foreground"
                 : "text-muted-foreground hover-elevate"
               }`}
-            data-testid={`tab-${tab.id}`}
-          >
-            {tab.adminOnly && <Shield className="w-3 h-3 inline mr-1" />}
-            {tab.label}
-            {activeTab === tab.id && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-chart-1" />
-            )}
-          </button>
-        ))}
+              data-testid={`tab-${tab.id}`}
+            >
+              {tab.adminOnly && <Shield className="w-3 h-3 inline mr-1" />}
+              {tab.label}
+              {activeTab === tab.id && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-chart-1" />
+              )}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Mobile Nav */}
@@ -84,7 +113,11 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
             {tabs.map((tab) => (
               <DropdownMenuItem key={tab.id} onClick={() => onTabChange(tab.id)}>
                 {tab.adminOnly && <Shield className="w-3 h-3 mr-2" />}
-                {tab.label}
+                {tab.isAiCoach && (isPro ? <Sparkles className="w-4 h-4 mr-2 text-violet-500" /> : <Lock className="w-4 h-4 mr-2" />)}
+                <span className={tab.isAiCoach ? "text-violet-600 dark:text-violet-400 font-semibold" : ""}>{tab.label}</span>
+                {tab.isAiCoach && (
+                  <span className="ml-2 px-1 rounded bg-amber-500/10 text-amber-500 text-[10px] font-bold">PRO</span>
+                )}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

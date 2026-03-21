@@ -56,6 +56,7 @@ function Router() {
       <Route path="/diary" component={Dashboard} />
       <Route path="/goals" component={Dashboard} />
       <Route path="/settings" component={Dashboard} />
+      <Route path="/ai-coach" component={Dashboard} />
 
       {/* 3. Redirect e 404 */}
       <Route path="/login"><Redirect to="/" /></Route>
